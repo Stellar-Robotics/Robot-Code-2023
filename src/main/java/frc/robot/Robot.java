@@ -7,15 +7,15 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj2.command.Command;
+/*import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import pabeles.concurrency.IntOperatorTask.Max;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.XboxController;*/
 import edu.wpi.first.wpilibj.Joystick;
 
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.CANSparkMaxLowLevel;
+//import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 /**
@@ -37,7 +37,7 @@ public class Robot extends TimedRobot {
   // Define Controllers
   private final Joystick driverLeft = new Joystick(0);
   private final Joystick driverRight = new Joystick(1);
-  private final Joystick Operator = new Joystick(2);
+  //private final Joystick Operator = new Joystick(2);
 
   double driveRight = 0;
   double driveLeft = 0;
