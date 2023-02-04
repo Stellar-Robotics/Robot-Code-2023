@@ -7,16 +7,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-/*import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
-import pabeles.concurrency.IntOperatorTask.Max;
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.XboxController;*/
 import edu.wpi.first.wpilibj.Joystick;
-
-import com.revrobotics.CANSparkMax;
-//import com.revrobotics.CANSparkMaxLowLevel;
-import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -24,30 +15,28 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
  * the package after creating this project, you must also update the build.gradle file in the
  * project.
  */
+
 public class Robot extends TimedRobot {
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
-  // Define Motors.
-  private final CANSparkMax driveLeftFront = new CANSparkMax(32, MotorType.kBrushless);
-  private final CANSparkMax driveRightFront = new CANSparkMax(30, MotorType.kBrushless);
-  private final CANSparkMax driveLeftRear = new CANSparkMax(33, MotorType.kBrushless);
-  private final CANSparkMax driveRightRear = new CANSparkMax(31, MotorType.kBrushless);
-  // Define Controllers
-  private final Joystick driverLeft = new Joystick(0);
-  private final Joystick driverRight = new Joystick(1);
-  //private final Joystick Operator = new Joystick(2);
+
+  private final DriveTrain driveTrain = new DriveTrain();
 
   double driveRight = 0;
   double driveLeft = 0;
 
+  private final Joystick driverLeft = new Joystick(0);
+
   boolean toggleState = false;
   boolean toggleLast = false; 
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
    */
+  
   @Override
   public void robotInit() {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
@@ -103,42 +92,13 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    // Setting a multiplier that is changed when the trigger on joystic is held down.
 
-    // A small state machine to toggle different drive train speeds.
-    double driveSpeedMultiplier = toggleState?0.2:1;
-    if (toggleState) {
-      if (driverRight.getRawButton(1)) {
-        driveLeft = driverRight.getZ() * driveSpeedMultiplier * 0.8;
-        driveRight = driverRight.getZ() * driveSpeedMultiplier * 0.8;
-      }
-      else{
-        driveLeft = -driverLeft.getY() * driveSpeedMultiplier;
-        driveRight = driverRight.getY() * driveSpeedMultiplier;
-      }
-    }
-    else {
-      if (driverRight.getRawButton(1)) {
-        driveLeft = driverRight.getZ() * driveSpeedMultiplier * 0.;
-        driveRight = driverRight.getZ() * driveSpeedMultiplier * 0.6;
-      }
-      else{
-        driveLeft = -driverLeft.getY() * driveSpeedMultiplier;
-        driveRight = driverRight.getY() * driveSpeedMultiplier;
-      }
-    }
     if ( (driverLeft.getRawButton(12) == true) & (!toggleLast) ) {
       toggleState  = !toggleState;
     }
 
     toggleLast = driverLeft.getRawButton(12);
-
-
-    // Applying the drive train speed using the raw axis input multiplied by the toggle fraction.
-    driveLeftFront.set(driveLeft);
-    driveRightFront.set(driveRight);
-    driveLeftRear.set(driveLeft);
-    driveRightRear.set(driveRight);
+    driveTrain.tankDrive(toggleState);
 
   }
 
