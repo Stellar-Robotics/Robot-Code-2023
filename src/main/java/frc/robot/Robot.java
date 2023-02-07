@@ -9,6 +9,14 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Joystick;
 
+// importing some motors
+
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.ControlType;
+import com.revrobotics.CANSparkMaxLowLevel;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import com.revrobotics.SparkMaxPIDController;
+
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -22,12 +30,16 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+  // Declare arm motor
+  private final CANSparkMax armMotor = new CANSparkMax(34, MotorType.kBrushless);
+
   private final DriveTrain driveTrain = new DriveTrain();
 
   double driveRight = 0;
   double driveLeft = 0;
 
   private final Joystick driverLeft = new Joystick(0);
+  private final Joystick operator = new Joystick(2);
 
   boolean toggleState = false;
   boolean toggleLast = false; 
@@ -37,11 +49,15 @@ public class Robot extends TimedRobot {
    * initialization code.
    */
 
+   // set arm motor run mode
+   SparkMaxPIDController setEncoder = armMotor.getPIDController();
   @Override
   public void robotInit() {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
+
+    
   }
 
   /**
@@ -94,12 +110,19 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
 
+    // Calls the state machine in the DriveTrain class
     if ( (driverLeft.getRawButton(12) == true) & (!toggleLast) ) {
       toggleState  = !toggleState;
     }
 
     toggleLast = driverLeft.getRawButton(12);
     driveTrain.tankDrive(toggleState);
+
+    // Getting the arm up and going
+
+    //armMotor.set(operator.getY())
+
+    setEncoder.setReference(5, ControlType.kPosition);
 
   }
 
