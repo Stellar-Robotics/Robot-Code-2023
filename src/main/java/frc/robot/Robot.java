@@ -44,6 +44,9 @@ public class Robot extends TimedRobot {
   boolean toggleState = false;
   boolean toggleLast = false; 
 
+  // Declare Encoder
+  ADIS16470_IMU gyro = new ADIS16470_IMU();
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
