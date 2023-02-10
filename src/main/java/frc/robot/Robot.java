@@ -7,13 +7,16 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.Joystick;
+
+//import javax.security.auth.x500.X500Principal;
 
 // importing some motors
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMax.ControlType;
-import com.revrobotics.CANSparkMaxLowLevel;
+//import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxPIDController;
 
@@ -59,6 +62,7 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
+    Pneumatic.compressor.disable();
 
     
   }
@@ -107,7 +111,7 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() {}
+  public void teleopInit() { Pneumatic.compressor.enableDigital(); }
 
   /** This function is called periodically during operator control. */
   @Override
@@ -127,11 +131,13 @@ public class Robot extends TimedRobot {
 
     setEncoder.setReference(5, ControlType.kPosition);
 
+    SmartDashboard.putNumber("gyro", operator.getY());
+
   }
 
   /** This function is called once when the robot is disabled. */
   @Override
-  public void disabledInit() {}
+  public void disabledInit() { Pneumatic.compressor.disable(); }
 
   /** This function is called periodically when disabled. */
   @Override
