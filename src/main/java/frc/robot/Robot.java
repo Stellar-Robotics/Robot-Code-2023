@@ -5,10 +5,15 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.ADIS16448_IMU.IMUAxis;
+import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Servo;
+
+import java.util.Random;
 
 //import javax.security.auth.x500.X500Principal;
 
@@ -34,12 +39,14 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
   // Declare arm motor
-  private final CANSparkMax armMotor = new CANSparkMax(34, MotorType.kBrushless);
+  //private final CANSparkMax armMotor = new CANSparkMax(34, MotorType.kBrushless);
 
-  private final DriveTrain driveTrain = new DriveTrain();
+  private final DriveTrain driveTrain = new DriveTrain(DriveTrain.DriveLayout.CYGNUS);
 
   double driveRight = 0;
   double driveLeft = 0;
+
+  double pitchIAccumulator = 0;
 
   private final Joystick driverLeft = new Joystick(0);
   private final Joystick operator = new Joystick(2);
@@ -50,13 +57,17 @@ public class Robot extends TimedRobot {
   // Declare Encoder
   ADIS16470_IMU gyro = new ADIS16470_IMU();
 
+  // Decalring the lighting module.
+
+  Spark lightController = new Spark(0);
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
    */
 
    // set arm motor run mode
-   SparkMaxPIDController setEncoder = armMotor.getPIDController();
+   //SparkMaxPIDController setEncoder = armMotor.getPIDController();
   @Override
   public void robotInit() {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
@@ -111,7 +122,7 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() { Pneumatic.compressor.enableDigital(); }
+public void teleopInit() { /*Pneumatic.compressor.enableDigital();*/  Pneumatic.compressor.disable(); }
 
   /** This function is called periodically during operator control. */
   @Override
@@ -127,17 +138,22 @@ public class Robot extends TimedRobot {
 
     // Getting the arm up and going
 
-    //armMotor.set(operator.getY())
-
-    setEncoder.setReference(5, ControlType.kPosition);
+    //armMotor.set(operator.getY());
 
     SmartDashboard.putNumber("gyro", operator.getY());
+
+    Pneumatic.Solenoid.set(operator.getRawButton(1));
+
+    // Setting a light preset using PWM
+
+    lightController.set(0.53);
+
 
   }
 
   /** This function is called once when the robot is disabled. */
   @Override
-  public void disabledInit() { Pneumatic.compressor.disable(); }
+public void disabledInit() { Pneumatic.compressor.disable(); }
 
   /** This function is called periodically when disabled. */
   @Override
@@ -145,11 +161,48 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when test mode is enabled. */
   @Override
-  public void testInit() {}
+  public void testInit() {
+    gyro.reset();
+    gyro.setYawAxis(ADIS16470_IMU.IMUAxis.kZ);
+  }
 
   /** This function is called periodically during test mode. */
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+  /*
+    //gyro.setYawAxis(ADIS16470_IMU.IMUAxis.kX);
+    double roll = gyro.getXComplementaryAngle();
+    //gyro.setYawAxis(ADIS16470_IMU.IMUAxis.kY);
+    double yaw = gyro.getAngle();
+    double pitch = gyro.getYComplementaryAngle();
+    double pitchVel = gyro.getRate();
+    
+    SmartDashboard.putNumber("yaw", yaw);
+
+    SmartDashboard.putNumber("pitch", pitch);
+    SmartDashboard.putNumber("pitch vel", pitchVel);
+    SmartDashboard.putNumber("roll", roll);
+
+    pitchIAccumulator += pitch;
+
+    double pitchD = 0.004;
+    double pitchP = 0.005;
+    double pitchI = 0.0001;
+    double pitchDeadband = 0;
+
+    double yawP = 0.01;
+
+
+    
+    if (Math.abs(gyro.getAngle()) > pitchDeadband) {
+      driveTrain.driveLeftFront.set(-pitchP * pitch - pitchD * pitchVel - pitchI * pitchIAccumulator + yawP * yaw);
+      driveTrain.driveRightFront.set(pitchP * pitch + pitchD * pitchVel + pitchI * pitchIAccumulator + yawP * yaw);
+      driveTrain.driveLeftRear.set(-pitchP * pitch - pitchD * pitchVel - pitchI * pitchIAccumulator + yawP * yaw);
+      driveTrain.driveRightRear.set(pitchP * pitch + pitchD * pitchVel + pitchI * pitchIAccumulator + yawP * yaw);
+      
+    }
+    */
+  }
 
   /** This function is called once when the robot is first started up. */
   @Override
