@@ -9,7 +9,9 @@ import edu.wpi.first.wpilibj.ADIS16448_IMU.IMUAxis;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.button.POVButton;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Servo;
 
@@ -20,10 +22,12 @@ import java.util.Random;
 // importing some motors
 
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMax.ControlType;
 //import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.SparkMaxAlternateEncoder;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -41,7 +45,7 @@ public class Robot extends TimedRobot {
   // Declare arm motor
   //private final CANSparkMax armMotor = new CANSparkMax(34, MotorType.kBrushless);
 
-  private final DriveTrain driveTrain = new DriveTrain(DriveTrain.DriveLayout.CYGNUS);
+  private final DriveTrain driveTrain = new DriveTrain(DriveTrain.DriveLayout.NEW);
 
   double driveRight = 0;
   double driveLeft = 0;
@@ -50,12 +54,25 @@ public class Robot extends TimedRobot {
 
   private final Joystick driverLeft = new Joystick(0);
   private final Joystick operator = new Joystick(2);
+  private final Joystick guitar = new Joystick(3);
+
 
   boolean toggleState = false;
   boolean toggleLast = false; 
 
   // Declare Encoder
   ADIS16470_IMU gyro = new ADIS16470_IMU();
+
+  CANSparkMax arm = new CANSparkMax(34, MotorType.kBrushless);
+
+  RelativeEncoder armEncoder = arm.getEncoder();
+
+  SparkMaxPIDController armPIDController = arm.getPIDController();
+
+  
+
+  
+  
 
   // Decalring the lighting module.
 
@@ -74,8 +91,20 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
     Pneumatic.compressor.disable();
-
+    lightController.set(0.69);
+        
+    SmartDashboard.putNumber("Pitch", 0);
+    SmartDashboard.putNumber("Yaw", 0);
+    SmartDashboard.putNumber("Pitch Velocity", 0);
     
+    SmartDashboard.putNumber("P", 0.0045);
+    SmartDashboard.putNumber("I", 0.00001);
+    SmartDashboard.putNumber("D", 0.006);
+    SmartDashboard.putNumber("PitchMaxDVelocity", 2.5);
+    SmartDashboard.putNumber("StopAngle", 4);
+    SmartDashboard.putNumber("ArmP", 0);
+    SmartDashboard.putNumber("ArmPos", 0);
+
   }
 
   /**
@@ -86,7 +115,7 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() { lightController.set(0.69); }
 
   /**
    * This autonomous (along with the chooser code above) shows how to select between different
@@ -122,7 +151,7 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when teleop is enabled. */
   @Override
-public void teleopInit() { /*Pneumatic.compressor.enableDigital();*/  Pneumatic.compressor.disable(); }
+public void teleopInit() { Pneumatic.compressor.enableDigital();  /*Pneumatic.compressor.disable();*/ }
 
   /** This function is called periodically during operator control. */
   @Override
@@ -138,15 +167,27 @@ public void teleopInit() { /*Pneumatic.compressor.enableDigital();*/  Pneumatic.
 
     // Getting the arm up and going
 
-    //armMotor.set(operator.getY());
+    arm.set(operator.getY());
 
-    SmartDashboard.putNumber("gyro", operator.getY());
+    SmartDashboard.putNumber("Data", operator.getY());
 
-    Pneumatic.Solenoid.set(operator.getRawButton(1));
+    Pneumatic.Solenoid.set(guitar.getRawButton(1));
 
     // Setting a light preset using PWM
 
-    lightController.set(0.53);
+    lightController.set(0.37);
+
+    SmartDashboard.putNumber("Encoder", armEncoder.getPosition());
+
+    armPIDController.setReference(SmartDashboard.getNumber("ArmPos", 0), CANSparkMax.ControlType.kPosition);
+
+    double armP = SmartDashboard.getNumber("ArmP", 0);
+    double armI = 0;
+    double armD = 0;
+
+    armPIDController.setP(armP);
+    armPIDController.setI(armI);
+    armPIDController.setD(armD);
 
 
   }
@@ -157,51 +198,74 @@ public void disabledInit() { Pneumatic.compressor.disable(); }
 
   /** This function is called periodically when disabled. */
   @Override
-  public void disabledPeriodic() {}
+  public void disabledPeriodic() {
+    pitchIAccumulator = 0;
+  }
 
   /** This function is called once when test mode is enabled. */
   @Override
   public void testInit() {
     gyro.reset();
     gyro.setYawAxis(ADIS16470_IMU.IMUAxis.kZ);
+
   }
 
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {
-  /*
-    //gyro.setYawAxis(ADIS16470_IMU.IMUAxis.kX);
+  
     double roll = gyro.getXComplementaryAngle();
-    //gyro.setYawAxis(ADIS16470_IMU.IMUAxis.kY);
     double yaw = gyro.getAngle();
-    double pitch = gyro.getYComplementaryAngle();
-    double pitchVel = gyro.getRate();
-    
-    SmartDashboard.putNumber("yaw", yaw);
+    double pitch = -gyro.getYComplementaryAngle();
+    double pitchVel = -gyro.getRate();
 
-    SmartDashboard.putNumber("pitch", pitch);
-    SmartDashboard.putNumber("pitch vel", pitchVel);
+    double pitchIReset = 12;
+    
+    SmartDashboard.putNumber("Yaw", yaw);
+
+    SmartDashboard.putNumber("Pitch", pitch);
+    SmartDashboard.putNumber("Pitch Velocity", pitchVel);
     SmartDashboard.putNumber("roll", roll);
 
-    pitchIAccumulator += pitch;
+    pitchIAccumulator = Math.abs(pitch) > pitchIReset? pitchIAccumulator + pitch: 0;
 
-    double pitchD = 0.004;
-    double pitchP = 0.005;
-    double pitchI = 0.0001;
-    double pitchDeadband = 0;
+    SmartDashboard.putNumber("Accumulated I", pitchIAccumulator);
 
-    double yawP = 0.01;
 
+    double pitchD = SmartDashboard.getNumber("D", 0);
+    double pitchP = SmartDashboard.getNumber("P", 0);
+    double pitchI = SmartDashboard.getNumber("I", 0);
+
+    double stopAngle = SmartDashboard.getNumber("StopAngle", 4);
+    double pitchMaxDVelocity = SmartDashboard.getNumber("PitchMaxDVelocity", 100);
+    
+    
+
+    double yawP = 0.005;
+
+    double pitchForceP = (pitchP * Math.pow(pitch, 2));
+    double pitchForceI = (pitchI * pitchIAccumulator);
+    double pitchForceD = (pitchD * (Math.abs(pitchVel) < pitchMaxDVelocity? pitchVel : 0));
+    
+    
+
+    double pitchForce = pitchForceP + pitchForceI + pitchForceD;
+
+    double driveLeftPower =  -pitchForce + (yawP * yaw);
+    double driveRightPower = pitchForce + (yawP * yaw);
+    
+    SmartDashboard.putNumber("power", pitchForce);
 
     
-    if (Math.abs(gyro.getAngle()) > pitchDeadband) {
-      driveTrain.driveLeftFront.set(-pitchP * pitch - pitchD * pitchVel - pitchI * pitchIAccumulator + yawP * yaw);
-      driveTrain.driveRightFront.set(pitchP * pitch + pitchD * pitchVel + pitchI * pitchIAccumulator + yawP * yaw);
-      driveTrain.driveLeftRear.set(-pitchP * pitch - pitchD * pitchVel - pitchI * pitchIAccumulator + yawP * yaw);
-      driveTrain.driveRightRear.set(pitchP * pitch + pitchD * pitchVel + pitchI * pitchIAccumulator + yawP * yaw);
+    driveTrain.driveLeftFront.set(driveLeftPower);
+    driveTrain.driveRightFront.set(driveRightPower);
+    driveTrain.driveLeftRear.set(driveLeftPower);
+    driveTrain.driveRightRear.set(driveRightPower);
+
+
       
-    }
-    */
+
+    
   }
 
   /** This function is called once when the robot is first started up. */
