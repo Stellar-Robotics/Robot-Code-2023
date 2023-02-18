@@ -3,7 +3,6 @@ package frc.robot;
 import edu.wpi.first.wpilibj.Joystick;
 
 import com.revrobotics.CANSparkMax;
-//import com.revrobotics.CANSparkMaxLowLevel;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 public class DriveTrain {
@@ -12,22 +11,18 @@ public class DriveTrain {
         NEW
     }
 
-    //private final DriveLayo currentDrive = Drive.CYGNUS;
-
     public final CANSparkMax driveLeftFront;
     public final CANSparkMax driveRightFront;
     public final CANSparkMax driveLeftRear;
     public final CANSparkMax driveRightRear;
+
     // Define Controllers
+
     private final Joystick driverLeft = new Joystick(0);
     private final Joystick driverRight = new Joystick(1);
-    //private final Joystick Operator = new Joystick(2);
   
     double driveRight = 0;
     double driveLeft = 0;
-  
-    //boolean toggleState = false;
-    //boolean toggleLast = false; 
 
     public DriveTrain(DriveLayout layout ) {
         if (layout == DriveLayout.NEW) {
@@ -47,12 +42,11 @@ public class DriveTrain {
 
         double driveRight = 0;
         double driveLeft = 0;
-      
-        //boolean toggleState = false;
-        //boolean toggleLast = false;
 
-                // A small state machine to toggle different drive train speeds.
+        // A small state machine to toggle different drive train speeds.
+
         double driveSpeedMultiplier = toggleState?0.2:1;
+
         if (toggleState) {
             if (driverRight.getRawButton(1)) {
                 driveLeft = driverRight.getZ() * driveSpeedMultiplier * 0.8;
@@ -73,15 +67,9 @@ public class DriveTrain {
                 driveRight = driverRight.getY() * driveSpeedMultiplier;
             }
         }
-        /*
-        if ( (driverLeft.getRawButton(12) == true) & (!toggleLast) ) {
-        toggleState  = !toggleState;
-        }
-
-        toggleLast = driverLeft.getRawButton(12);
-        */
 
         // Applying the drive train speed using the raw axis input multiplied by the toggle fraction.
+        
         driveLeftFront.set(driveLeft);
         driveRightFront.set(driveRight);
         driveLeftRear.set(driveLeft);
