@@ -11,7 +11,8 @@ public class Pneumatic {
 
     static Compressor compressor = new Compressor(35, PneumaticsModuleType.REVPH);
 
-    static Solenoid Solenoid = phub.makeSolenoid(1);
+    static Solenoid gripSolenoid = phub.makeSolenoid(1);
+    static Solenoid pushSolenoid = phub.makeSolenoid(0);
 
     public void corePneumatic(boolean controllerbind) {
         

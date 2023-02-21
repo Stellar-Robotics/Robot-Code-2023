@@ -45,17 +45,18 @@ public class DriveTrain {
 
         // A small state machine to toggle different drive train speeds.
 
-        double driveSpeedMultiplier = toggleState?0.2:1;
+        double driveSpeedMultiplier = (toggleState == true || Robot.armEncoder.getPosition() > 5)?0.2:1;
 
-        if (toggleState) {
+        //if (toggleState == true || Robot.armEncoder.getPosition() > 5) {
             if (driverRight.getRawButton(1)) {
-                driveLeft = driverRight.getZ() * driveSpeedMultiplier * 0.8;
-                driveRight = driverRight.getZ() * driveSpeedMultiplier * 0.8;
+                driveLeft = driverRight.getZ() * driveSpeedMultiplier * 0.6;
+                driveRight = driverRight.getZ() * driveSpeedMultiplier * 0.6;
             }
             else{
                 driveLeft = -driverLeft.getY() * driveSpeedMultiplier;
                 driveRight = driverRight.getY() * driveSpeedMultiplier;
             }
+        /*
         }
         else {
             if (driverRight.getRawButton(1)) {
@@ -67,9 +68,9 @@ public class DriveTrain {
                 driveRight = driverRight.getY() * driveSpeedMultiplier;
             }
         }
-
+*/
         // Applying the drive train speed using the raw axis input multiplied by the toggle fraction.
-        
+
         driveLeftFront.set(driveLeft);
         driveRightFront.set(driveRight);
         driveLeftRear.set(driveLeft);

@@ -12,6 +12,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.XboxController;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
@@ -39,6 +40,7 @@ public class Robot extends TimedRobot {
   private final Joystick driverLeft = new Joystick(0);
   private final Joystick operator = new Joystick(2);
   private final Joystick guitar = new Joystick(3);
+  private final XboxController xOperator = new XboxController(4);
 
   // Setting variables for logic.
 
@@ -48,7 +50,9 @@ public class Robot extends TimedRobot {
   double pitchIAccumulator = 0;
 
   boolean toggleState = false;
-  boolean toggleLast = false; 
+  boolean toggleLast = false;
+  
+  boolean toggleLastArm = false;
 
   double targetPosition = 0;
 
@@ -56,9 +60,9 @@ public class Robot extends TimedRobot {
 
   ADIS16470_IMU gyro = new ADIS16470_IMU(); // Creating the gyro refrence.
 
-  CANSparkMax arm = new CANSparkMax(34, MotorType.kBrushless); // Creating the Arm Motor refrence.
+  static CANSparkMax arm = new CANSparkMax(34, MotorType.kBrushless); // Creating the Arm Motor refrence.
 
-  RelativeEncoder armEncoder = arm.getEncoder(); // Getting the encoder for the arm
+  static RelativeEncoder armEncoder = arm.getEncoder(); // Getting the encoder for the arm
 
   SparkMaxPIDController armPIDController = arm.getPIDController(); // Creating a PID controller.
 
@@ -92,6 +96,9 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("ArmI", 0); 
     SmartDashboard.putNumber("ArmD", 0); 
     SmartDashboard.putNumber("ArmPos", 0);
+
+    SmartDashboard.putNumber("TestButtonSpike", 0);
+    SmartDashboard.putBoolean("DriveSpeed", false);
 
     // Setting hardware device values
 
@@ -162,8 +169,20 @@ public class Robot extends TimedRobot {
     driveTrain.tankDrive(toggleState);
 
     // Pneumatic Actuation Code
+    
+    if (operator.getRawButtonPressed(3)) {
 
-    Pneumatic.Solenoid.set(guitar.getRawButton(1));
+      Pneumatic.gripSolenoid.toggle();
+
+    }
+
+    //toggleLastArm = guitar.getRawButton(5);
+
+    if (operator.getRawButtonPressed(4)){
+
+      Pneumatic.pushSolenoid.toggle();
+
+    }
 
     // Setting a light preset using PWM
 
@@ -171,21 +190,21 @@ public class Robot extends TimedRobot {
 
     // Arm Positioning and PID
 
-    if ( guitar.getPOV() == 0 & targetPosition <= 70 ) {
+    if ( operator.getY() < -0.25 & targetPosition <= 75 & operator.getRawButton(1)) {
 
       targetPosition += 0.5;
 
     }
 
-    else if ( guitar.getPOV() == 180 & targetPosition >= 0 ) {
+    else if ( operator.getY() > 0.25 & targetPosition >= -14 & operator.getRawButton(1)) {
 
-      targetPosition -=0.5;
+      targetPosition -= 0.5;
 
     }
 
     armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kPosition);
 
-    double armP = SmartDashboard.getNumber("ArmP", 0.02);
+    double armP = SmartDashboard.getNumber("ArmP", 0.1);
     double armI = SmartDashboard.getNumber("ArmI", 0.001);
     double armD = SmartDashboard.getNumber("ArmD", 0.02);
 
@@ -195,9 +214,11 @@ public class Robot extends TimedRobot {
 
     // Update SmartDashboard
 
+    SmartDashboard.putNumber("TestButtonSpike", guitar.getRawButton(5)? 1 : 0);
     SmartDashboard.putNumber("Encoder", armEncoder.getPosition());
     SmartDashboard.putNumber("GuitarHat", guitar.getPOV());
     SmartDashboard.putNumber("OperatorY", operator.getY());
+    SmartDashboard.putBoolean("DriveSpeed", (toggleState || armEncoder.getPosition() > 5));
 
   }
 
@@ -246,6 +267,7 @@ public void disabledInit() { Pneumatic.compressor.disable(); }
     double pitchI = SmartDashboard.getNumber("I", 0);
 
     //double stopAngle = SmartDashboard.getNumber("StopAngle", 4);
+
     double pitchMaxDVelocity = SmartDashboard.getNumber("PitchMaxDVelocity", 100);
     
     
