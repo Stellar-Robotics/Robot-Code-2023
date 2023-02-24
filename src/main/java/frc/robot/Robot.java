@@ -7,12 +7,14 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
@@ -28,21 +30,46 @@ import com.revrobotics.SparkMaxPIDController;
 
 public class Robot extends TimedRobot {
 
+  public enum DriveLayout {
+    CYGNUS,
+    NEW
+  }
+
+  // Set drive mode
+  private static DriveLayout driveLayout = DriveLayout.NEW;
+
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-  private final DriveTrain driveTrain = new DriveTrain(DriveTrain.DriveLayout.NEW);
+  // Declare inputs.
 
-  // Declare controll devices.
-
-  private final Joystick driverLeft = new Joystick(0);
+  private final Joystick DRIVER_LEFT_JOYSTICK = new Joystick(0);
+  private final Joystick DRIVER_RIGHT_JOYSTICK = new Joystick(1);
   private final Joystick operator = new Joystick(2);
   private final Joystick guitar = new Joystick(3);
   private final XboxController xOperator = new XboxController(4);
 
+  // Declare motors & actuators.
+  public final CANSparkMax DRIVE_LEFT_FRONT;
+  public final CANSparkMax DRIVE_RIGHT_FRONT;
+  public final CANSparkMax DRIVE_LEFT_REAR;
+  public final CANSparkMax DRIVE_RIGHT_REAR;
+
+  public final MotorControllerGroup DRIVE_LEFT;
+  public final MotorControllerGroup DRIVE_RIGHT;
+
+
+  private DifferentialDrive drivetrain;
+
   // Setting variables for logic.
+
+  private final double MAX_ARM_HEIGHT = 0.75;
+
+  double armP = 0;
+  double armI = 0;
+  double armD = 0;
 
   double driveRight = 0;
   double driveLeft = 0;
@@ -67,6 +94,32 @@ public class Robot extends TimedRobot {
   SparkMaxPIDController armPIDController = arm.getPIDController(); // Creating a PID controller.
 
   Spark lightController = new Spark(0); // Decalring the lighting module.
+
+  public Robot() {
+    super();
+
+    if (driveLayout == DriveLayout.NEW) {
+      DRIVE_LEFT_FRONT = new CANSparkMax(32, MotorType.kBrushless);
+      DRIVE_RIGHT_FRONT = new CANSparkMax(30, MotorType.kBrushless);
+      DRIVE_LEFT_REAR = new CANSparkMax(33, MotorType.kBrushless);
+      DRIVE_RIGHT_REAR = new CANSparkMax(31, MotorType.kBrushless);
+    } else {
+      DRIVE_LEFT_FRONT = new CANSparkMax(50, MotorType.kBrushless);
+      DRIVE_RIGHT_FRONT = new CANSparkMax(54, MotorType.kBrushless);
+      DRIVE_LEFT_REAR = new CANSparkMax(42, MotorType.kBrushless);
+      DRIVE_RIGHT_REAR = new CANSparkMax(52, MotorType.kBrushless);
+    }
+
+    DRIVE_LEFT = new MotorControllerGroup(DRIVE_LEFT_FRONT, DRIVE_LEFT_REAR);
+    DRIVE_RIGHT = new MotorControllerGroup(DRIVE_RIGHT_FRONT, DRIVE_RIGHT_REAR);
+
+    drivetrain = new DifferentialDrive(DRIVE_LEFT, DRIVE_RIGHT);
+
+    // Set up smart motion constraints for arm
+    armPIDController.setSmartMotionMaxVelocity(0.2, 0);
+    armPIDController.setSmartMotionMaxAccel(0.1, 0);
+    
+  }
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -104,6 +157,8 @@ public class Robot extends TimedRobot {
 
     Pneumatic.compressor.disable();
     lightController.set(0.69);
+
+
 
   }
 
@@ -159,14 +214,26 @@ public class Robot extends TimedRobot {
 
     // Calls the state machine in the DriveTrain class
 
-    if ( (driverLeft.getRawButton(12) == true) & (!toggleLast) ) {
+    if ( (DRIVER_LEFT_JOYSTICK.getRawButton(12) == true) & (!toggleLast) ) {
 
       toggleState  = !toggleState;
 
     }
+    toggleLast = DRIVER_LEFT_JOYSTICK.getRawButton(12);
 
-    toggleLast = driverLeft.getRawButton(12);
-    driveTrain.tankDrive(toggleState);
+    // Calculate multiplier
+    double driveSpeedMultiplier = 1;
+    if (toggleState || armEncoder.getPosition() > 5) {
+      driveSpeedMultiplier *= 0.2;
+    }
+
+    // Calculate power based on power and multiplier
+    double driveLeftPower = -DRIVER_LEFT_JOYSTICK.getY() * driveSpeedMultiplier;
+    double driveRightPower = DRIVER_RIGHT_JOYSTICK.getY() * driveSpeedMultiplier;
+
+    // Apply motor power
+    drivetrain.tankDrive(driveLeftPower, driveRightPower);
+
 
     // Pneumatic Actuation Code
     
@@ -190,30 +257,41 @@ public class Robot extends TimedRobot {
 
     // Arm Positioning and PID
 
-    if ( operator.getY() < -0.25 & targetPosition <= 75 & operator.getRawButton(1)) {
+    /*
+    if ( operator.getY() < -0.25 && targetPosition <= 75 && operator.getRawButton(1)) {
 
       targetPosition += 0.5;
 
     }
 
-    else if ( operator.getY() > 0.25 & targetPosition >= -14 & operator.getRawButton(1)) {
+    else if ( operator.getY() > 0.25 && targetPosition >= -14 && operator.getRawButton(1)) {
 
       targetPosition -= 0.5;
 
+    } */
+
+    targetPosition = operator.getY() * MAX_ARM_HEIGHT;
+
+    armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kSmartMotion);
+
+    // Get PID values.
+    double newArmP = SmartDashboard.getNumber("ArmP", 0.1);
+    double newArmI = SmartDashboard.getNumber("ArmI", 0.001);
+    double newArmD = SmartDashboard.getNumber("ArmD", 0.02);
+
+    // If the values have changed, update the controller.
+    // (It's not good to constantly update PID values, even if they stay the same)
+    if (newArmP != armP || newArmI != armI || newArmD != armD) {
+      armP = SmartDashboard.getNumber("ArmP", 0.1);
+      armI = SmartDashboard.getNumber("ArmI", 0.001);
+      armD = SmartDashboard.getNumber("ArmD", 0.02);
+
+      armPIDController.setP(armP);
+      armPIDController.setI(armI);
+      armPIDController.setD(armD);
     }
 
-    armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kPosition);
-
-    double armP = SmartDashboard.getNumber("ArmP", 0.1);
-    double armI = SmartDashboard.getNumber("ArmI", 0.001);
-    double armD = SmartDashboard.getNumber("ArmD", 0.02);
-
-    armPIDController.setP(armP);
-    armPIDController.setI(armI);
-    armPIDController.setD(armD);
-
     // Update SmartDashboard
-
     SmartDashboard.putNumber("TestButtonSpike", guitar.getRawButton(5)? 1 : 0);
     SmartDashboard.putNumber("Encoder", armEncoder.getPosition());
     SmartDashboard.putNumber("GuitarHat", guitar.getPOV());
@@ -287,11 +365,7 @@ public void disabledInit() { Pneumatic.compressor.disable(); }
     
     SmartDashboard.putNumber("power", pitchForce);
 
-    
-    driveTrain.driveLeftFront.set(driveLeftPower);
-    driveTrain.driveRightFront.set(driveRightPower);
-    driveTrain.driveLeftRear.set(driveLeftPower);
-    driveTrain.driveRightRear.set(driveRightPower);
+    drivetrain.tankDrive(driveLeftPower, driveRightPower);
 
 
       
