@@ -65,7 +65,7 @@ public class Robot extends TimedRobot {
 
   // Setting variables for logic.
 
-  private final double MAX_ARM_HEIGHT = 0.75;
+  private final double MAX_ARM_HEIGHT = 75;
 
   double armP = 0;
   double armI = 0;
@@ -224,12 +224,14 @@ public class Robot extends TimedRobot {
     // Calculate multiplier
     double driveSpeedMultiplier = 1;
     if (toggleState || armEncoder.getPosition() > 5) {
-      driveSpeedMultiplier *= 0.2;
+      driveSpeedMultiplier *= 0.5;
     }
 
     // Calculate power based on power and multiplier
     double driveLeftPower = -DRIVER_LEFT_JOYSTICK.getY() * driveSpeedMultiplier;
     double driveRightPower = DRIVER_RIGHT_JOYSTICK.getY() * driveSpeedMultiplier;
+
+    driveRightPower += 0.005;
 
     // Apply motor power
     drivetrain.tankDrive(driveLeftPower, driveRightPower);
@@ -257,8 +259,8 @@ public class Robot extends TimedRobot {
 
     // Arm Positioning and PID
 
-    /*
-    if ( operator.getY() < -0.25 && targetPosition <= 75 && operator.getRawButton(1)) {
+    
+    if ( operator.getY() < -0.25 && targetPosition <= 85 && operator.getRawButton(1)) {
 
       targetPosition += 0.5;
 
@@ -268,23 +270,23 @@ public class Robot extends TimedRobot {
 
       targetPosition -= 0.5;
 
-    } */
+    } 
 
-    targetPosition = operator.getY() * MAX_ARM_HEIGHT;
+    //targetPosition = operator.getY() * MAX_ARM_HEIGHT;
 
-    armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kSmartMotion);
+    armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kPosition);
 
     // Get PID values.
     double newArmP = SmartDashboard.getNumber("ArmP", 0.1);
-    double newArmI = SmartDashboard.getNumber("ArmI", 0.001);
-    double newArmD = SmartDashboard.getNumber("ArmD", 0.02);
+    double newArmI = SmartDashboard.getNumber("ArmI", 0);
+    double newArmD = SmartDashboard.getNumber("ArmD", 0);
 
     // If the values have changed, update the controller.
     // (It's not good to constantly update PID values, even if they stay the same)
     if (newArmP != armP || newArmI != armI || newArmD != armD) {
       armP = SmartDashboard.getNumber("ArmP", 0.1);
-      armI = SmartDashboard.getNumber("ArmI", 0.001);
-      armD = SmartDashboard.getNumber("ArmD", 0.02);
+      armI = SmartDashboard.getNumber("ArmI", 0);
+      armD = SmartDashboard.getNumber("ArmD", 0);
 
       armPIDController.setP(armP);
       armPIDController.setI(armI);
