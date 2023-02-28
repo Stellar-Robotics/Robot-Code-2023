@@ -15,11 +15,14 @@ import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.event.BooleanEvent;
+import edu.wpi.first.wpilibj.event.EventLoop;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.CANSparkMax.ControlType;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -65,7 +68,7 @@ public class Robot extends TimedRobot {
 
   // Setting variables for logic.
 
-  private final double MAX_ARM_HEIGHT = 75;
+  private final double MAX_ARM_HEIGHT = 90;
 
   double armP = 0;
   double armI = 0;
@@ -88,12 +91,14 @@ public class Robot extends TimedRobot {
   ADIS16470_IMU gyro = new ADIS16470_IMU(); // Creating the gyro refrence.
 
   static CANSparkMax arm = new CANSparkMax(34, MotorType.kBrushless); // Creating the Arm Motor refrence.
-
+  
   static RelativeEncoder armEncoder = arm.getEncoder(); // Getting the encoder for the arm
 
   SparkMaxPIDController armPIDController = arm.getPIDController(); // Creating a PID controller.
 
   Spark lightController = new Spark(0); // Decalring the lighting module.
+
+
 
   public Robot() {
     super();
@@ -116,8 +121,9 @@ public class Robot extends TimedRobot {
     drivetrain = new DifferentialDrive(DRIVE_LEFT, DRIVE_RIGHT);
 
     // Set up smart motion constraints for arm
-    armPIDController.setSmartMotionMaxVelocity(0.2, 0);
-    armPIDController.setSmartMotionMaxAccel(0.1, 0);
+    armPIDController.setSmartMotionMaxVelocity(5820, 0);
+    armPIDController.setSmartMotionMaxAccel(2500, 0);
+    armPIDController.setSmartMotionAllowedClosedLoopError(2, 0);
     
   }
 
@@ -145,9 +151,9 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("PitchMaxDVelocity", 2.5);
     SmartDashboard.putNumber("StopAngle", 4);
 
-    SmartDashboard.putNumber("ArmP", 0.01);
+    SmartDashboard.putNumber("ArmP", 0.0008);
     SmartDashboard.putNumber("ArmI", 0); 
-    SmartDashboard.putNumber("ArmD", 0); 
+    SmartDashboard.putNumber("ArmD", 0.0001); 
     SmartDashboard.putNumber("ArmPos", 0);
 
     SmartDashboard.putNumber("TestButtonSpike", 0);
@@ -187,21 +193,27 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
-    System.out.println("Auto selected: " + m_autoSelected);
+    //System.out.println("Auto selected: " + m_autoSelected);
+    arm.set(-0.25);
+    long startTime = System.currentTimeMillis();
+
+    do {
+      SmartDashboard.putNumber("Arm Current", arm.getOutputCurrent());
+      if (arm.getOutputCurrent() < 10) {
+        startTime = System.currentTimeMillis();
+      }
+    } while (System.currentTimeMillis() - startTime < 50);
+
+    armEncoder.setPosition(0);
+    arm.set(0);
+    armPIDController.setReference(-1, ControlType.kSmartMotion);
   }
 
   /** This function is called periodically during autonomous. */
   @Override
   public void autonomousPeriodic() {
-    switch (m_autoSelected) {
-      case kCustomAuto:
-        // Put custom auto code here
-        break;
-      case kDefaultAuto:
-      default:
-        // Put default auto code here
-        break;
-    }
+    SmartDashboard.putNumber("Arm Angle", armEncoder.getPosition());
+    
   }
 
   /** This function is called once when teleop is enabled. */
@@ -224,17 +236,25 @@ public class Robot extends TimedRobot {
     // Calculate multiplier
     double driveSpeedMultiplier = 1;
     if (toggleState || armEncoder.getPosition() > 5) {
-      driveSpeedMultiplier *= 0.5;
+      driveSpeedMultiplier *= 0.55;
     }
 
-    // Calculate power based on power and multiplier
-    double driveLeftPower = -DRIVER_LEFT_JOYSTICK.getY() * driveSpeedMultiplier;
-    double driveRightPower = DRIVER_RIGHT_JOYSTICK.getY() * driveSpeedMultiplier;
+    if (DRIVER_RIGHT_JOYSTICK.getRawButton(1)) {
+      double driveLeftPower = DRIVER_RIGHT_JOYSTICK.getZ() * driveSpeedMultiplier * 0.6;
+      double driveRightPower = DRIVER_RIGHT_JOYSTICK.getZ() * driveSpeedMultiplier * 0.6;
+      // Apply motor power
+      drivetrain.tankDrive(driveLeftPower, driveRightPower);
+    }
+    else {
+      // Calculate power based on power and multiplier
+      double driveLeftPower = -DRIVER_LEFT_JOYSTICK.getY() * driveSpeedMultiplier;
+      double driveRightPower = DRIVER_RIGHT_JOYSTICK.getY() * driveSpeedMultiplier;
+      //driveRightPower += 0.05;
+      // Apply motor power
+      drivetrain.tankDrive(driveLeftPower, driveRightPower);
+    }
 
-    driveRightPower += 0.005;
-
-    // Apply motor power
-    drivetrain.tankDrive(driveLeftPower, driveRightPower);
+    
 
 
     // Pneumatic Actuation Code
@@ -259,8 +279,8 @@ public class Robot extends TimedRobot {
 
     // Arm Positioning and PID
 
-    
-    if ( operator.getY() < -0.25 && targetPosition <= 85 && operator.getRawButton(1)) {
+    /* 
+    if ( operator.getY() < -0.25 && targetPosition <= 90 && operator.getRawButton(1)) {
 
       targetPosition += 0.5;
 
@@ -270,11 +290,12 @@ public class Robot extends TimedRobot {
 
       targetPosition -= 0.5;
 
-    } 
+    } */
 
-    //targetPosition = operator.getY() * MAX_ARM_HEIGHT;
 
-    armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kPosition);
+    targetPosition = Math.max(0, -operator.getY() * MAX_ARM_HEIGHT - 1);
+
+    armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kSmartMotion);
 
     // Get PID values.
     double newArmP = SmartDashboard.getNumber("ArmP", 0.1);
