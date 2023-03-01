@@ -46,6 +46,9 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+  // The amount of power to reduce to the left side of the drive train
+  private final double SERENOCITY = 0.85;
+
   // Declare inputs.
 
   private final Joystick DRIVER_LEFT_JOYSTICK = new Joystick(0);
@@ -194,19 +197,28 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     //System.out.println("Auto selected: " + m_autoSelected);
-    arm.set(-0.25);
+    arm.set(-0.1);
     long startTime = System.currentTimeMillis();
+    double lastCurrent = Double.MAX_VALUE;
 
-    do {
+    while (true) {
       SmartDashboard.putNumber("Arm Current", arm.getOutputCurrent());
-      if (arm.getOutputCurrent() < 10) {
-        startTime = System.currentTimeMillis();
-      }
-    } while (System.currentTimeMillis() - startTime < 50);
+      if (System.currentTimeMillis() - startTime > 25) {
+        
+        /* 
+        if (arm.getOutputCurrent() > lastCurrent) {
+          break;
+        }
+        */
 
+        startTime = System.currentTimeMillis();
+        lastCurrent = arm.getOutputCurrent();
+      }
+    }
+    /* 
     armEncoder.setPosition(0);
     arm.set(0);
-    armPIDController.setReference(-1, ControlType.kSmartMotion);
+    armPIDController.setReference(-1, ControlType.kSmartMotion);*/
   }
 
   /** This function is called periodically during autonomous. */
@@ -248,7 +260,7 @@ public class Robot extends TimedRobot {
     else {
       // Calculate power based on power and multiplier
       double driveLeftPower = -DRIVER_LEFT_JOYSTICK.getY() * driveSpeedMultiplier;
-      double driveRightPower = DRIVER_RIGHT_JOYSTICK.getY() * driveSpeedMultiplier;
+      double driveRightPower = (DRIVER_RIGHT_JOYSTICK.getY() * SERENOCITY) * driveSpeedMultiplier;
       //driveRightPower += 0.05;
       // Apply motor power
       drivetrain.tankDrive(driveLeftPower, driveRightPower);
@@ -293,7 +305,7 @@ public class Robot extends TimedRobot {
     } */
 
 
-    targetPosition = Math.max(0, -operator.getY() * MAX_ARM_HEIGHT - 1);
+    targetPosition = Math.max(0, -operator.getY() * MAX_ARM_HEIGHT);
 
     armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kSmartMotion);
 
