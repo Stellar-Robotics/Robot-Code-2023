@@ -162,10 +162,13 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("TestButtonSpike", 0);
     SmartDashboard.putBoolean("DriveSpeed", false);
 
+    SmartDashboard.putNumber("ConeColor", 0.63);
+    SmartDashboard.putNumber("CubeColor", 0.57);
+
     // Setting hardware device values
 
     Pneumatic.compressor.disable();
-    lightController.set(0.69);
+    //lightController.set(0.69);
 
 
 
@@ -179,7 +182,8 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() { lightController.set(0.69); }
+  public void robotPeriodic() { //lightController.set(-0.07); 
+  }
 
   /**
    * This autonomous (along with the chooser code above) shows how to select between different
@@ -285,9 +289,19 @@ public class Robot extends TimedRobot {
 
     }
 
+
+    //Operator LED contorl for Human Player comunication
+
+    if (operator.getRawButtonPressed(5)){
+      lightController.set(SmartDashboard.getNumber("ConeColor", 0.63));
+    }
+    if (operator.getRawButtonPressed(6)){
+      lightController.set(SmartDashboard.getNumber("CubeColor", 0.57));
+    }
+    //lightController.set(0.65);
     // Setting a light preset using PWM
 
-    lightController.set(0.37);
+    //lightController.set(0.37);
 
     // Arm Positioning and PID
 
@@ -306,6 +320,7 @@ public class Robot extends TimedRobot {
 
 
     targetPosition = Math.max(0, -operator.getY() * MAX_ARM_HEIGHT);
+    
 
     armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kSmartMotion);
 
