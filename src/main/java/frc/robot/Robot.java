@@ -6,12 +6,21 @@
 
 package frc.robot;
 import java.util.Random;
+
+import org.opencv.core.Mat;
+
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.AutonomousStateMachine.State;
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.CvSink;
+import edu.wpi.first.cscore.CvSource;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -54,8 +63,9 @@ public class Robot extends TimedRobot {
   public final Joystick DRIVER_LEFT_JOYSTICK = new Joystick(0);
   public final Joystick DRIVER_RIGHT_JOYSTICK = new Joystick(1);
   public final Joystick operator = new Joystick(2);
-  public final Joystick guitar = new Joystick(3);
-  public final XboxController xOperator = new XboxController(4);
+  public final GenericHID BUTTON_PANEL = new GenericHID(3);
+  //public final Joystick guitar = new Joystick(3);
+  //public final XboxController xOperator = new XboxController(4);
 
   // Declare motors & actuators.
   public final CANSparkMax DRIVE_LEFT_FRONT;
@@ -103,6 +113,16 @@ public class Robot extends TimedRobot {
 
   // AUTO STUFF
   AutonomousStateMachine auto;
+  int selectedAutoMode;
+  enum AutoMode {
+    DRIVE_AND_BALANCE,
+    DO_NOTHING,
+    DRIVE_TO_LINE
+  }
+
+  // CAMERA STUFF
+  //Mat mat = new Mat();
+  UsbCamera camera;
 
   public Robot() {
     super();
@@ -130,6 +150,12 @@ public class Robot extends TimedRobot {
     //drivetrain = new DifferentialDrive(DRIVE_LEFT_FRONT, DRIVE_RIGHT_FRONT);
     //drivetrain.
 
+    // Set up smart motion constraints for drivetrain
+    //DRIVE_LEFT.setSmartMotionMaxAccel(kDefaultPeriod, selectedAutoMode)
+    DRIVE_LEFT.setP(0.001);
+    DRIVE_RIGHT.setP(0.001);
+
+
     // Set up smart motion constraints for arm
     armPIDController.setSmartMotionMaxVelocity(5820, 0);
     armPIDController.setSmartMotionMaxAccel(2500, 0);
@@ -155,9 +181,9 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Pitch", 0);
     SmartDashboard.putNumber("Yaw", 0);
     SmartDashboard.putNumber("Pitch Velocity", 0);
-    SmartDashboard.putNumber("P", 0.005);
-    SmartDashboard.putNumber("I", 0.25);
-    SmartDashboard.putNumber("D", 0.005);
+    SmartDashboard.putNumber("P", 0.0053);
+    SmartDashboard.putNumber("I", 0.0007);
+    SmartDashboard.putNumber("D", 0.008);
     SmartDashboard.putNumber("PitchMaxDVelocity", 2.5);
     SmartDashboard.putNumber("StopAngle", 4);
     SmartDashboard.putNumber("PitchExponent", 1);
@@ -208,7 +234,13 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     gyro.reset();
     gyro.setYawAxis(ADIS16470_IMU.IMUAxis.kZ);
-    auto = new AutonomousStateMachine(this, AutonomousStateMachine.State.BALANCE);
+
+    switch (AutoMode.values()[selectedAutoMode]) {
+        case DO_NOTHING: {auto = new AutonomousStateMachine(this, State.DO_NOTHING); break;}
+        case DRIVE_AND_BALANCE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_PLATFORM); break;}
+        case DRIVE_TO_LINE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_LINE); break;}
+    }
+    
 
     //DRIVE_LEFT.setP(0.05);
     //DRIVE_RIGHT.setP(0.05);
@@ -222,13 +254,29 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() { Pneumatic.compressor.enableDigital(); }
+  public void teleopInit() { 
+    Pneumatic.compressor.enableDigital(); 
+    camera = CameraServer.startAutomaticCapture();
+  }
 
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
 
     // Calls the state machine in the DriveTrain class
+
+    // Creates UsbCamera and MjpegServer [1] and connects them
+    
+
+    // Creates the CvSink and connects it to the UsbCamera
+    //CvSink cvSink = CameraServer.getVideo();
+    //cvSink.grabFrame(mat);
+
+    // Creates the CvSource and MjpegServer [2] and connects them
+    //CvSource outputStream = CameraServer.putVideo("Blur", 640, 480);
+    //outputStream.putFrame(mat);
+
+
     
     if ( (DRIVER_LEFT_JOYSTICK.getRawButton(12) == true) & (!toggleLast) ) {
 
@@ -297,9 +345,15 @@ public class Robot extends TimedRobot {
 
       targetPosition -= 0.5;
 
-    } 
+    }
 
-
+    if (BUTTON_PANEL.getRawButton(0)) {
+      targetPosition = 0;
+    } else if (BUTTON_PANEL.getRawButton(1)) {
+      targetPosition = 50;
+    } else if (BUTTON_PANEL.getRawButton(2)) {
+      targetPosition = 100;
+    }
     //targetPosition = Math.max(0, -operator.getY() * MAX_ARM_HEIGHT);
     
 
@@ -325,9 +379,9 @@ public class Robot extends TimedRobot {
     }
 
     // Update SmartDashboard
-    SmartDashboard.putNumber("TestButtonSpike", guitar.getRawButton(5)? 1 : 0);
+    //SmartDashboard.putNumber("TestButtonSpike", guitar.getRawButton(5)? 1 : 0);
     SmartDashboard.putNumber("Encoder", armEncoder.getPosition());
-    SmartDashboard.putNumber("GuitarHat", guitar.getPOV());
+    //SmartDashboard.putNumber("GuitarHat", guitar.getPOV());
     SmartDashboard.putNumber("OperatorY", operator.getY());
     SmartDashboard.putBoolean("DriveSpeed", (toggleState || armEncoder.getPosition() > 5));
     
@@ -335,23 +389,55 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when the robot is disabled. */
   @Override
-public void disabledInit() { Pneumatic.compressor.disable(); }
+  public void disabledInit() { Pneumatic.compressor.disable(); }
 
   /** This function is called periodically when disabled. */
   @Override
   public void disabledPeriodic() {
-    pitchIAccumulator = 0;
+    if (SmartDashboard.getBoolean("Next Auto", true)) {
+      selectedAutoMode = (selectedAutoMode + 1) % AutoMode.values().length;
+      SmartDashboard.putBoolean("Next Auto", false);
+    }
+    
+    SmartDashboard.putString("Selected Auto", AutoMode.values()[selectedAutoMode].toString());
   }
 
   /** This function is called once when test mode is enabled. */
   @Override
   public void testInit() {
+
   }
 
   /** This function is called periodically during test mode. */
   @Override
   public void testPeriodic() {
+    final double targetVelocity = 480;
 
+    double P = SmartDashboard.getNumber("P", 0);
+    if (P != DRIVE_LEFT.getP()) {
+      DRIVE_LEFT.setP(P);
+      DRIVE_RIGHT.setP(P);
+    }
+    SmartDashboard.putNumber("P", DRIVE_LEFT.getP());
+
+    double I = SmartDashboard.getNumber("I", 0);
+    if (I != DRIVE_LEFT.getI()) {
+      DRIVE_LEFT.setI(I);
+      DRIVE_RIGHT.setI(I);
+    }
+    SmartDashboard.putNumber("I", DRIVE_LEFT.getI());
+
+    double D = SmartDashboard.getNumber("D", 0);
+    if (D != DRIVE_LEFT.getD()) {
+      DRIVE_LEFT.setD(D);
+      DRIVE_RIGHT.setD(D);
+    }
+    SmartDashboard.putNumber("D", DRIVE_LEFT.getD());
+
+    DRIVE_LEFT.setReference(-targetVelocity, CANSparkMax.ControlType.kVelocity);
+    DRIVE_RIGHT.setReference(targetVelocity, CANSparkMax.ControlType.kVelocity);
+
+    SmartDashboard.putNumber("DriveVelocity", DRIVE_LEFT_FRONT.getEncoder().getVelocity());
   }
 
   /** This function is called once when the robot is first started up. */

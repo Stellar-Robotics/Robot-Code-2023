@@ -8,24 +8,54 @@ import com.revrobotics.CANSparkMax.ControlType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class AutonomousStateMachine {
+    class BoxcarAverager {
+        double[] values;
+        int current = 0;
+
+        public BoxcarAverager(int size) {
+            values = new double[size];
+        }
+
+        public void addValue(double value) {
+            values[current] = value;
+            if (++current == values.length) {current = 0;}
+        }
+
+        public double getValue() {
+            double sum = 0;
+            for (double val : values) {
+                sum += val;
+            }
+            return sum / values.length;
+        }
+    }
+
     private Robot robot;
 
     // AUTO STUFF
     enum State {
         DRIVE_TO_PLATFORM,
-        BALANCE
+        BALANCE,
+        DO_NOTHING,
+        DRIVE_TO_LINE
     }
 
-    private State currentState = State.DRIVE_TO_PLATFORM;
+    private State currentState;
 
     // PID stuff
     double pitchIAccumulator = 0;
     double yawP = 0.005;
     double pitchIReset = 4;
 
+    double previousPitch = 0;
+    long previousTime = 0;
+
+    BoxcarAverager pitchVelocityAverager;
+
     public AutonomousStateMachine(Robot robot, State startingState) {
         this.robot = robot;
         this.currentState = startingState;
+        pitchVelocityAverager = new BoxcarAverager(100);
     }
 
     public AutonomousStateMachine(Robot robot) {
@@ -37,18 +67,48 @@ public class AutonomousStateMachine {
         
         switch(currentState) {
             case DRIVE_TO_PLATFORM: {this.driveToPlatform(); break;}
+            case DRIVE_TO_LINE: {this.driveToLine(); break;}
             case BALANCE: {this.balance2(); break;}
+            default: {break;}
         }
     }
 
     public void driveToPlatform() {
-        SmartDashboard.putNumber("STATE MACHINE RANDOM", new Random().nextDouble());
+        //SmartDashboard.putNumber("STATE MACHINE RANDOM", new Random().nextDouble());
+        double yaw = robot.gyro.getAngle();
+        double pitch = -robot.gyro.getYComplementaryAngle();
+        //double pitchVel = -robot.gyro.getRate();
+        pitchVelocityAverager.addValue((pitch - previousPitch) / (System.currentTimeMillis() - previousTime) * 1000);
+        double pitchVel = pitchVelocityAverager.getValue();
+        previousTime = System.currentTimeMillis();
+        previousPitch = pitch;
 
-        robot.DRIVE_LEFT.setReference(-0.5, ControlType.kDutyCycle);
-        robot.DRIVE_RIGHT.setReference(0.5, ControlType.kDutyCycle);
+        SmartDashboard.putNumber("Pitch", pitch);
+        SmartDashboard.putNumber("Pitch Velocity", pitchVel);
 
-        if (Math.abs(robot.gyro.getYComplementaryAngle()) > 10) {
+        // Drive forward and steer
+        robot.DRIVE_LEFT.setReference(-0.15 + (yawP * yaw), ControlType.kDutyCycle);
+        robot.DRIVE_RIGHT.setReference(0.15 + (yawP * yaw), ControlType.kDutyCycle);
+
+        if (pitchVel < -4) {
             currentState = State.BALANCE;
+        }
+    }
+
+    public void driveToLine() {
+        final double LINE_ENCODER_COUNT = 3000;
+
+        //SmartDashboard.putNumber("STATE MACHINE RANDOM", new Random().nextDouble());
+        double yaw = robot.gyro.getAngle();
+
+        // Drive forward and steer
+        robot.DRIVE_LEFT.setReference(-0.15 + (yawP * yaw), ControlType.kDutyCycle);
+        robot.DRIVE_RIGHT.setReference(0.15 + (yawP * yaw), ControlType.kDutyCycle);
+        
+        if (robot.DRIVE_LEFT_FRONT.getEncoder().getPosition() >= LINE_ENCODER_COUNT) {
+            robot.DRIVE_LEFT.setReference(0, ControlType.kDutyCycle);
+            robot.DRIVE_RIGHT.setReference(0, ControlType.kDutyCycle);
+            currentState = State.DO_NOTHING;
         }
     }
 
@@ -56,8 +116,12 @@ public class AutonomousStateMachine {
         double roll = robot.gyro.getXComplementaryAngle();
         double yaw = robot.gyro.getAngle();
         double pitch = -robot.gyro.getYComplementaryAngle();
-        double pitchVel = -robot.gyro.getRate();
-        
+        //double pitchVel = -robot.gyro.getRate();
+        pitchVelocityAverager.addValue((pitch - previousPitch) / (System.currentTimeMillis() - previousTime) * 1000);
+        double pitchVel = pitchVelocityAverager.getValue();
+        previousTime = System.currentTimeMillis();
+        previousPitch = pitch;
+
         SmartDashboard.putNumber("Yaw", yaw);
     
         SmartDashboard.putNumber("Pitch", pitch);
@@ -118,17 +182,19 @@ public class AutonomousStateMachine {
 
         double pitchForce = 0;
 
-        if (Math.abs(pitchVel) < 5) {
+        if (Math.abs(pitchVel) < 4) {
             SmartDashboard.putNumber("ENCODER", robot.DRIVE_LEFT_FRONT.getEncoder().getVelocity());
-            
-            if (Math.abs(robot.DRIVE_LEFT_FRONT.getEncoder().getVelocity()) < 100 && Math.abs(pitch) > 5) {
-                pitchIAccumulator += pitchI * Math.signum(pitch);
+            double velocityTerm = 0;
+
+            if (Math.abs(pitch) > 5) {
+                velocityTerm = (80 - Math.abs(robot.DRIVE_LEFT_FRONT.getEncoder().getVelocity())) * Math.signum(pitch) * pitchI;
+                //pitchIAccumulator += pitchI * Math.signum(pitch);
             } else {
                 pitchIAccumulator = 0;
             }
 
             //pitchForce = Math.pow(Math.abs(pitch), pitchExponent) * Math.signum(pitch) * pitchP;
-            pitchForce = (pitch + pitchIAccumulator) * pitchP;
+            pitchForce = (pitch + pitchIAccumulator + velocityTerm) * pitchP;
         } else {
             pitchForce = pitchVel * pitchD;
         }
