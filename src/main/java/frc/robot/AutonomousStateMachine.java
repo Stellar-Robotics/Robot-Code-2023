@@ -40,11 +40,15 @@ public class AutonomousStateMachine {
         DRIVE_TO_LINE
     }
 
+    // The minimum angle at which the robot stops driving forward at
+    // a constant speed and begins driving more slowly to balance on the platform.
+    final double START_BALANCING_AT_ANGLE = 17;
+
     private State currentState;
 
     // PID stuff
     double pitchIAccumulator = 0;
-    double yawP = 0.005;
+    double yawP = 4;
     double pitchIReset = 4;
 
     double previousPitch = 0;
@@ -87,25 +91,27 @@ public class AutonomousStateMachine {
         SmartDashboard.putNumber("Pitch Velocity", pitchVel);
 
         // Drive forward and steer
-        robot.DRIVE_LEFT.setReference(-0.15 + (yawP * yaw), ControlType.kDutyCycle);
-        robot.DRIVE_RIGHT.setReference(0.15 + (yawP * yaw), ControlType.kDutyCycle);
+        robot.DRIVE_LEFT.setReference(-900 + (yawP * yaw), ControlType.kVelocity);
+        robot.DRIVE_RIGHT.setReference(900 + (yawP * yaw), ControlType.kVelocity);
 
-        if (pitchVel < -4) {
+        if (Math.abs(pitch) > START_BALANCING_AT_ANGLE) {
             currentState = State.BALANCE;
         }
     }
 
     public void driveToLine() {
-        final double LINE_ENCODER_COUNT = 3000;
+        final double LINE_ENCODER_COUNT = 30;
 
         //SmartDashboard.putNumber("STATE MACHINE RANDOM", new Random().nextDouble());
         double yaw = robot.gyro.getAngle();
 
         // Drive forward and steer
-        robot.DRIVE_LEFT.setReference(-0.15 + (yawP * yaw), ControlType.kDutyCycle);
-        robot.DRIVE_RIGHT.setReference(0.15 + (yawP * yaw), ControlType.kDutyCycle);
+        robot.DRIVE_LEFT.setReference(-0.15, ControlType.kDutyCycle);
+        robot.DRIVE_RIGHT.setReference(0.15, ControlType.kDutyCycle);
+
+        SmartDashboard.putNumber("drivetrain encoder distance", robot.DRIVE_LEFT_FRONT.getEncoder().getPosition());
         
-        if (robot.DRIVE_LEFT_FRONT.getEncoder().getPosition() >= LINE_ENCODER_COUNT) {
+        if (robot.DRIVE_LEFT_FRONT.getEncoder().getPosition() <= -LINE_ENCODER_COUNT) {
             robot.DRIVE_LEFT.setReference(0, ControlType.kDutyCycle);
             robot.DRIVE_RIGHT.setReference(0, ControlType.kDutyCycle);
             currentState = State.DO_NOTHING;
@@ -176,25 +182,14 @@ public class AutonomousStateMachine {
         SmartDashboard.putNumber("Pitch Velocity", pitchVel);
         SmartDashboard.putNumber("Accumulated I", pitchIAccumulator);
 
-        double pitchP = SmartDashboard.getNumber("P", 0);
-        double pitchI = SmartDashboard.getNumber("I", 0);
-        double pitchD = SmartDashboard.getNumber("D", 0);
+        double pitchP = 10;
+        double pitchI = 0;
+        double pitchD = 12;
 
         double pitchForce = 0;
 
-        if (Math.abs(pitchVel) < 4) {
-            SmartDashboard.putNumber("ENCODER", robot.DRIVE_LEFT_FRONT.getEncoder().getVelocity());
-            double velocityTerm = 0;
-
-            if (Math.abs(pitch) > 5) {
-                velocityTerm = (80 - Math.abs(robot.DRIVE_LEFT_FRONT.getEncoder().getVelocity())) * Math.signum(pitch) * pitchI;
-                //pitchIAccumulator += pitchI * Math.signum(pitch);
-            } else {
-                pitchIAccumulator = 0;
-            }
-
-            //pitchForce = Math.pow(Math.abs(pitch), pitchExponent) * Math.signum(pitch) * pitchP;
-            pitchForce = (pitch + pitchIAccumulator + velocityTerm) * pitchP;
+        if (Math.abs(pitchVel) < 4.5) {
+            pitchForce = pitch * pitchP;
         } else {
             pitchForce = pitchVel * pitchD;
         }
@@ -206,7 +201,7 @@ public class AutonomousStateMachine {
         SmartDashboard.putNumber("power", pitchForce);
         
         // Apply power
-        robot.DRIVE_LEFT.setReference(driveLeftPower, ControlType.kDutyCycle);
-        robot.DRIVE_RIGHT.setReference(driveRightPower, ControlType.kDutyCycle);
+        robot.DRIVE_LEFT.setReference(driveLeftPower, ControlType.kVelocity);
+        robot.DRIVE_RIGHT.setReference(driveRightPower, ControlType.kVelocity);
     }
 }

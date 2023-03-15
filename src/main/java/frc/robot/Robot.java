@@ -62,7 +62,7 @@ public class Robot extends TimedRobot {
 
   public final Joystick DRIVER_LEFT_JOYSTICK = new Joystick(0);
   public final Joystick DRIVER_RIGHT_JOYSTICK = new Joystick(1);
-  public final Joystick operator = new Joystick(2);
+  public final Joystick OPERATOR = new Joystick(2);
   public final GenericHID BUTTON_PANEL = new GenericHID(3);
   //public final Joystick guitar = new Joystick(3);
   //public final XboxController xOperator = new XboxController(4);
@@ -152,8 +152,8 @@ public class Robot extends TimedRobot {
 
     // Set up smart motion constraints for drivetrain
     //DRIVE_LEFT.setSmartMotionMaxAccel(kDefaultPeriod, selectedAutoMode)
-    DRIVE_LEFT.setP(0.001);
-    DRIVE_RIGHT.setP(0.001);
+    //DRIVE_LEFT.setP(0.001);
+    //DRIVE_RIGHT.setP(0.001);
 
 
     // Set up smart motion constraints for arm
@@ -181,19 +181,15 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Pitch", 0);
     SmartDashboard.putNumber("Yaw", 0);
     SmartDashboard.putNumber("Pitch Velocity", 0);
-    SmartDashboard.putNumber("P", 0.0053);
-    SmartDashboard.putNumber("I", 0.0007);
-    SmartDashboard.putNumber("D", 0.008);
-    SmartDashboard.putNumber("PitchMaxDVelocity", 2.5);
-    SmartDashboard.putNumber("StopAngle", 4);
-    SmartDashboard.putNumber("PitchExponent", 1);
+    SmartDashboard.putNumber("P", 0.0008);
+    SmartDashboard.putNumber("I", 0.000);
+    SmartDashboard.putNumber("D", 0.00004);
 
     SmartDashboard.putNumber("ArmP", 0.0008);
     SmartDashboard.putNumber("ArmI", 0); 
     SmartDashboard.putNumber("ArmD", 0.0001); 
     SmartDashboard.putNumber("ArmPos", 0);
 
-    SmartDashboard.putNumber("TestButtonSpike", 0);
     SmartDashboard.putBoolean("DriveSpeed", false);
 
     SmartDashboard.putNumber("ConeColor", 0.63);
@@ -239,6 +235,26 @@ public class Robot extends TimedRobot {
         case DO_NOTHING: {auto = new AutonomousStateMachine(this, State.DO_NOTHING); break;}
         case DRIVE_AND_BALANCE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_PLATFORM); break;}
         case DRIVE_TO_LINE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_LINE); break;}
+    }
+
+    double P = SmartDashboard.getNumber("P", 0);
+    if (P != DRIVE_LEFT.getP()) {
+      DRIVE_LEFT.setP(P);
+      DRIVE_RIGHT.setP(P);
+    }
+    SmartDashboard.putNumber("P", DRIVE_LEFT.getP());
+
+    double I = SmartDashboard.getNumber("I", 0);
+    if (I != DRIVE_LEFT.getI()) {
+      DRIVE_LEFT.setI(I);
+      DRIVE_RIGHT.setI(I);
+    }
+    SmartDashboard.putNumber("I", DRIVE_LEFT.getI());
+
+    double D = SmartDashboard.getNumber("D", 0);
+    if (D != DRIVE_LEFT.getD()) {
+      DRIVE_LEFT.setD(D);
+      DRIVE_RIGHT.setD(D);
     }
     
 
@@ -310,13 +326,13 @@ public class Robot extends TimedRobot {
 
     // Pneumatic Actuation Code
     
-    if (operator.getRawButtonPressed(3)) {
+    if (OPERATOR.getRawButtonPressed(3)) {
 
       Pneumatic.gripSolenoid.toggle();
 
     }
 
-    if (operator.getRawButtonPressed(4)){
+    if (OPERATOR.getRawButtonPressed(4)){
 
       Pneumatic.pushSolenoid.toggle();
 
@@ -325,10 +341,10 @@ public class Robot extends TimedRobot {
 
     //Operator LED contorl for Human Player comunication
 
-    if (operator.getRawButtonPressed(5)){
+    if (OPERATOR.getRawButtonPressed(5)){
       lightController.set(SmartDashboard.getNumber("ConeColor", 0.63));
     }
-    if (operator.getRawButtonPressed(6)){
+    if (OPERATOR.getRawButtonPressed(6)){
       lightController.set(SmartDashboard.getNumber("CubeColor", 0.57));
     }
     //lightController.set(0.65);
@@ -337,26 +353,24 @@ public class Robot extends TimedRobot {
     //lightController.set(0.37);
 
     // Arm Positioning and PID
-    if ( operator.getY() < -0.25 && targetPosition <= 90 && operator.getRawButton(1)) {
+    if ( OPERATOR.getY() < -0.25 && targetPosition <= 90 && OPERATOR.getRawButton(1)) {
 
       targetPosition += 0.5;
 
-    } else if ( operator.getY() > 0.25 && targetPosition >= 0 && operator.getRawButton(1)) {
+    } else if ( OPERATOR.getY() > 0.25 && targetPosition >= 0 && OPERATOR.getRawButton(1)) {
 
       targetPosition -= 0.5;
 
     }
 
-    if (BUTTON_PANEL.getRawButton(0)) {
-      targetPosition = 0;
-    } else if (BUTTON_PANEL.getRawButton(1)) {
-      targetPosition = 50;
-    } else if (BUTTON_PANEL.getRawButton(2)) {
-      targetPosition = 100;
+    if (OPERATOR.getPOV() == 0) {
+      targetPosition = 70;
+    } else if (OPERATOR.getPOV() == 180) {
+      targetPosition = 60;
     }
     //targetPosition = Math.max(0, -operator.getY() * MAX_ARM_HEIGHT);
     
-
+    SmartDashboard.putNumber("armPosition", targetPosition);
     armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kSmartMotion);
 
     //armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kPosition);
@@ -382,7 +396,7 @@ public class Robot extends TimedRobot {
     //SmartDashboard.putNumber("TestButtonSpike", guitar.getRawButton(5)? 1 : 0);
     SmartDashboard.putNumber("Encoder", armEncoder.getPosition());
     //SmartDashboard.putNumber("GuitarHat", guitar.getPOV());
-    SmartDashboard.putNumber("OperatorY", operator.getY());
+    SmartDashboard.putNumber("OperatorY", OPERATOR.getY());
     SmartDashboard.putBoolean("DriveSpeed", (toggleState || armEncoder.getPosition() > 5));
     
   }
