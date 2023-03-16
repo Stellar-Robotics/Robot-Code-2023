@@ -191,6 +191,11 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("ArmD", 0.0001); 
     SmartDashboard.putNumber("ArmPos", 0);
 
+    SmartDashboard.putNumber("PitchP", 10);
+    SmartDashboard.putNumber("PitchI", 0);
+    SmartDashboard.putNumber("PitchD", 12);
+
+
     SmartDashboard.putBoolean("DriveSpeed", false);
 
     SmartDashboard.putNumber("ConeColor", 0.63);
