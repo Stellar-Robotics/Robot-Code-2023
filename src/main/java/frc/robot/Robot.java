@@ -372,7 +372,7 @@ public class Robot extends TimedRobot {
       targetPosition = 60;
     }
   
-    Pneumatic.rightlatchSolenoid.set(targetPosition > 0 || OPERATOR.getRawButton(10));
+    Pneumatic.rightlatchSolenoid.set(targetPosition > 0 || OPERATOR.getRawButton(9));
     Pneumatic.leftlatchSolenoid.set(targetPosition > 0 || OPERATOR.getRawButton(9));
 
     //targetPosition = Math.max(0, -operator.getY() * MAX_ARM_HEIGHT);
