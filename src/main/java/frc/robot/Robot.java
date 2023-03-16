@@ -5,6 +5,7 @@
 // Import necessary libraries
 
 package frc.robot;
+import java.lang.management.OperatingSystemMXBean;
 import java.util.Random;
 
 import org.opencv.core.Mat;
@@ -356,6 +357,8 @@ public class Robot extends TimedRobot {
     if ( OPERATOR.getY() < -0.25 && targetPosition <= 90 && OPERATOR.getRawButton(1)) {
 
       targetPosition += 0.5;
+      //Pneumatic.rightlatchSolenoid.set(true);
+      //Pneumatic.leftlatchSolenoid.set(true);
 
     } else if ( OPERATOR.getY() > 0.25 && targetPosition >= 0 && OPERATOR.getRawButton(1)) {
 
@@ -368,6 +371,10 @@ public class Robot extends TimedRobot {
     } else if (OPERATOR.getPOV() == 180) {
       targetPosition = 60;
     }
+  
+    Pneumatic.rightlatchSolenoid.set(targetPosition > 0 || OPERATOR.getRawButton(10));
+    Pneumatic.leftlatchSolenoid.set(targetPosition > 0 || OPERATOR.getRawButton(9));
+
     //targetPosition = Math.max(0, -operator.getY() * MAX_ARM_HEIGHT);
     
     SmartDashboard.putNumber("armPosition", targetPosition);

@@ -13,6 +13,8 @@ public class Pneumatic {
 
     static Solenoid gripSolenoid = phub.makeSolenoid(1);
     static Solenoid pushSolenoid = phub.makeSolenoid(0);
+    static Solenoid rightlatchSolenoid = phub.makeSolenoid(2);
+    static Solenoid leftlatchSolenoid = phub.makeSolenoid(3);
 
     public void corePneumatic(boolean controllerbind) {
         
