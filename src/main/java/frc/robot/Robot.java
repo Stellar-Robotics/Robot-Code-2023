@@ -185,7 +185,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("P", 0.0008);
     SmartDashboard.putNumber("I", 0.000);
     SmartDashboard.putNumber("D", 0.00004);
-
+ 
     SmartDashboard.putNumber("ArmP", 0.0008);
     SmartDashboard.putNumber("ArmI", 0); 
     SmartDashboard.putNumber("ArmD", 0.0001); 

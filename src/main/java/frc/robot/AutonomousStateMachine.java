@@ -182,9 +182,9 @@ public class AutonomousStateMachine {
         SmartDashboard.putNumber("Pitch Velocity", pitchVel);
         SmartDashboard.putNumber("Accumulated I", pitchIAccumulator);
 
-        double pitchP = SmartDashboard.getNumber("PitchP", 10);
+        double pitchP = SmartDashboard.getNumber("PitchP", 22);
         double pitchI = SmartDashboard.getNumber("PitchP", 0);
-        double pitchD = SmartDashboard.getNumber("PitchP", 12);
+        double pitchD = SmartDashboard.getNumber("PitchP", 8);
 
 
 
