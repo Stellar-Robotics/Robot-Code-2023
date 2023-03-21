@@ -42,7 +42,7 @@ public class AutonomousStateMachine {
 
     // The minimum angle at which the robot stops driving forward at
     // a constant speed and begins driving more slowly to balance on the platform.
-    final double START_BALANCING_AT_ANGLE = 17;
+    final double START_BALANCING_AT_ANGLE = 18;
 
     private State currentState;
 
@@ -91,8 +91,8 @@ public class AutonomousStateMachine {
         SmartDashboard.putNumber("Pitch Velocity", pitchVel);
 
         // Drive forward and steer
-        robot.DRIVE_LEFT.setReference(-900 + (yawP * yaw), ControlType.kVelocity);
-        robot.DRIVE_RIGHT.setReference(900 + (yawP * yaw), ControlType.kVelocity);
+        robot.DRIVE_LEFT.setReference(600 + (yawP * yaw), ControlType.kVelocity);
+        robot.DRIVE_RIGHT.setReference(-600 + (yawP * yaw), ControlType.kVelocity);
 
         if (Math.abs(pitch) > START_BALANCING_AT_ANGLE) {
             currentState = State.BALANCE;
