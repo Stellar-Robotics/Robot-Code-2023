@@ -23,6 +23,7 @@ import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.event.BooleanEvent;
@@ -159,7 +160,7 @@ public class Robot extends TimedRobot {
 
     // Set up smart motion constraints for arm
     armPIDController.setSmartMotionMaxVelocity(5820, 0);
-    armPIDController.setSmartMotionMaxAccel(2500, 0);
+    armPIDController.setSmartMotionMaxAccel(2500, 0); 
     armPIDController.setSmartMotionAllowedClosedLoopError(2, 0);
     
   }
@@ -207,7 +208,10 @@ public class Robot extends TimedRobot {
     //lightController.set(0.69);
 
 
-
+    Pneumatic.phub.clearStickyFaults();
+    PowerDistribution pdp = new PowerDistribution();
+    pdp.clearStickyFaults();
+    pdp.close();
   }
 
   /**
