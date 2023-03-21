@@ -27,8 +27,7 @@
               "Y-axis/Automatic bounds": true,
               "Y-axis/Upper bound": 1.0,
               "Y-axis/Lower bound": -1.0,
-              "Y-axis/Unit": "ul",
-              "Visible data/SmartDashboard/DriveVelocity": true
+              "Y-axis/Unit": "ul"
             }
           },
           "7,0": {
@@ -127,8 +126,7 @@
               "Y-axis/Automatic bounds": true,
               "Y-axis/Upper bound": 1.0,
               "Y-axis/Lower bound": -1.0,
-              "Y-axis/Unit": "ul",
-              "Visible data/SmartDashboard/Pitch": true
+              "Y-axis/Unit": "ul"
             }
           },
           "3,3": {
@@ -147,8 +145,19 @@
               "Y-axis/Automatic bounds": true,
               "Y-axis/Upper bound": 1.0,
               "Y-axis/Lower bound": -1.0,
-              "Y-axis/Unit": "ul",
-              "Visible data/SmartDashboard/Pitch Velocity": true
+              "Y-axis/Unit": "ul"
+            }
+          },
+          "6,3": {
+            "size": [
+              2,
+              1
+            ],
+            "content": {
+              "_type": "Text View",
+              "_title": "SmartDashboard/PitchVelThresh",
+              "_glyph": 148,
+              "_showGlyph": false
             }
           }
         }

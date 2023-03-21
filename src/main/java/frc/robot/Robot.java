@@ -35,6 +35,9 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 
+import java.time.Clock;
+import java.lang.System;
+
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
  * each mode, as described in the TimedRobot documentation. If you change the name of this class or
@@ -119,7 +122,8 @@ public class Robot extends TimedRobot {
   enum AutoMode {
     DRIVE_AND_BALANCE,
     DO_NOTHING,
-    DRIVE_TO_LINE
+    DRIVE_TO_LINE,
+    SCORE_CONE
   }
 
   // CAMERA STUFF
@@ -186,7 +190,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("P", 0.0008);
     SmartDashboard.putNumber("I", 0.000);
     SmartDashboard.putNumber("D", 0.00004);
- 
+
     SmartDashboard.putNumber("ArmP", 0.0008);
     SmartDashboard.putNumber("ArmI", 0); 
     SmartDashboard.putNumber("ArmD", 0.0001); 
@@ -195,7 +199,6 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("PitchP", 10);
     SmartDashboard.putNumber("PitchI", 0);
     SmartDashboard.putNumber("PitchD", 12);
-
 
     SmartDashboard.putBoolean("DriveSpeed", false);
 
@@ -245,7 +248,7 @@ public class Robot extends TimedRobot {
         case DO_NOTHING: {auto = new AutonomousStateMachine(this, State.DO_NOTHING); break;}
         case DRIVE_AND_BALANCE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_PLATFORM); break;}
         case DRIVE_TO_LINE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_LINE); break;}
-    }
+        case SCORE_CONE: {auto = new AutonomousStateMachine(this, State.SCORE_CONE); break;}    }
 
     double P = SmartDashboard.getNumber("P", 0);
     if (P != DRIVE_LEFT.getP()) {
@@ -353,10 +356,17 @@ public class Robot extends TimedRobot {
 
     if (OPERATOR.getRawButtonPressed(5)){
       lightController.set(SmartDashboard.getNumber("ConeColor", 0.63));
+      double setTime = System.currentTimeMillis();
     }
     if (OPERATOR.getRawButtonPressed(6)){
       lightController.set(SmartDashboard.getNumber("CubeColor", 0.57));
+      double setTime = System.currentTimeMillis();
     }
+    
+    if (lightController.get() == 0.17 && (System.currentTimeMillis() - 6) > 50) {
+      lightController.set(0.17);
+    }
+    
     //lightController.set(0.65);
     // Setting a light preset using PWM
 
