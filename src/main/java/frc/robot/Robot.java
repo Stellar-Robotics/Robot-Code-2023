@@ -341,7 +341,7 @@ public class Robot extends TimedRobot {
     }
 
     if (OPERATOR.getRawButton(7)) {
-      ROLLER.set(1)
+      ROLLER.set(1);
     }
 
     // Pneumatic Actuation Code
