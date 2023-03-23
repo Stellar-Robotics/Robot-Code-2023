@@ -77,6 +77,7 @@ public class Robot extends TimedRobot {
   public final CANSparkMax DRIVE_RIGHT_FRONT;
   public final CANSparkMax DRIVE_LEFT_REAR;
   public final CANSparkMax DRIVE_RIGHT_REAR;
+  public final CANSparkMax ROLLER;
 
   public final SparkMaxPIDController DRIVE_LEFT;
   public final SparkMaxPIDController DRIVE_RIGHT;
@@ -144,6 +145,8 @@ public class Robot extends TimedRobot {
       DRIVE_LEFT_REAR = new CANSparkMax(42, MotorType.kBrushless);
       DRIVE_RIGHT_REAR = new CANSparkMax(52, MotorType.kBrushless);
     }
+
+    ROLLER = new CANSparkMax(36, MotorType.kBrushless);
 
     DRIVE_LEFT_REAR.follow(DRIVE_LEFT_FRONT);
     DRIVE_RIGHT_REAR.follow(DRIVE_RIGHT_FRONT);
@@ -337,6 +340,10 @@ public class Robot extends TimedRobot {
       DRIVE_RIGHT.setReference(driveRightPower, ControlType.kDutyCycle);
     }
 
+    if (OPERATOR.getRawButton(7)) {
+      ROLLER.set(1)
+    }
+
     // Pneumatic Actuation Code
     
     if (OPERATOR.getRawButtonPressed(3)) {
@@ -356,16 +363,20 @@ public class Robot extends TimedRobot {
 
     if (OPERATOR.getRawButtonPressed(5)){
       lightController.set(SmartDashboard.getNumber("ConeColor", 0.63));
-      double setTime = System.currentTimeMillis();
+      //double setTime = System.currentTimeMillis();
     }
     if (OPERATOR.getRawButtonPressed(6)){
       lightController.set(SmartDashboard.getNumber("CubeColor", 0.57));
-      double setTime = System.currentTimeMillis();
+      //double setTime = System.currentTimeMillis();
+    }
+    if (OPERATOR.getRawButtonPressed(2)){
+      lightController.set(SmartDashboard.getNumber("Default Color", 0.87));
+      //double setTime = System.currentTimeMillis();
     }
     
-    if (lightController.get() == 0.17 && (System.currentTimeMillis() - 6) > 50) {
-      lightController.set(0.17);
-    }
+    //if (lightController.get() == 0.17 && (System.currentTimeMillis() - 6) > 50) {
+      //lightController.set(0.17);
+    //}
     
     //lightController.set(0.65);
     // Setting a light preset using PWM
