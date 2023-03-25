@@ -1,8 +1,5 @@
 package frc.robot;
 
-import java.util.Random;
-
-import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
 import com.revrobotics.CANSparkMax;
 
@@ -112,7 +109,7 @@ public class AutonomousStateMachine {
         final double LINE_ENCODER_COUNT = 30;
 
         //SmartDashboard.putNumber("STATE MACHINE RANDOM", new Random().nextDouble());
-        double yaw = robot.gyro.getAngle();
+        //double yaw = robot.gyro.getAngle();
 
         // Drive forward and steer
         robot.DRIVE_LEFT.setReference(-0.15, ControlType.kDutyCycle);
@@ -128,7 +125,7 @@ public class AutonomousStateMachine {
     }
 
     public void balance2() {
-        double roll = robot.gyro.getXComplementaryAngle();
+        //double roll = robot.gyro.getXComplementaryAngle();
         double yaw = robot.gyro.getAngle();
         double pitch = -robot.gyro.getYComplementaryAngle();
         double pitchVel = -robot.gyro.getRate();
@@ -138,7 +135,7 @@ public class AutonomousStateMachine {
         SmartDashboard.putNumber("Accumulated I", pitchIAccumulator);
 
         double pitchP = SmartDashboard.getNumber("PitchP", 22);
-        double pitchI = SmartDashboard.getNumber("PitchI", 0);
+        //double pitchI = SmartDashboard.getNumber("PitchI", 0);
         double pitchD = SmartDashboard.getNumber("PitchD", 10);
 
         SmartDashboard.putNumber("PitchVelThresh", 4.5);
@@ -177,7 +174,7 @@ public class AutonomousStateMachine {
         final double LINE_ENCODER_COUNT = 5;
 
         //SmartDashboard.putNumber("STATE MACHINE RANDOM", new Random().nextDouble());
-        double yaw = robot.gyro.getAngle();
+        //double yaw = robot.gyro.getAngle();
 
         // Drive forward and steer
         robot.DRIVE_LEFT.setReference(0.15, ControlType.kDutyCycle);
