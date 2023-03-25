@@ -174,7 +174,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("ArmD", 0.0001); 
     SmartDashboard.putNumber("ArmPos", 0);
 
-    SmartDashboard.putNumber("PitchP", 10);
+    SmartDashboard.putNumber("PitchP", 20);
     SmartDashboard.putNumber("PitchI", 0);
     SmartDashboard.putNumber("PitchD", 12);
 
@@ -226,7 +226,8 @@ public class Robot extends TimedRobot {
         case DO_NOTHING: {auto = new AutonomousStateMachine(this, State.DO_NOTHING); break;}
         case DRIVE_AND_BALANCE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_PLATFORM); break;}
         case DRIVE_TO_LINE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_LINE); break;}
-        case SCORE_CONE: {auto = new AutonomousStateMachine(this, State.SCORE_CONE); break;}    }
+        case SCORE_CONE: {auto = new AutonomousStateMachine(this, State.RAISE_ARM); break;}    
+      }
 
     double P = SmartDashboard.getNumber("P", 0);
     if (P != DRIVE_LEFT.getP()) {

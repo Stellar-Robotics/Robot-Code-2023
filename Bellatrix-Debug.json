@@ -126,7 +126,8 @@
               "Y-axis/Automatic bounds": true,
               "Y-axis/Upper bound": 1.0,
               "Y-axis/Lower bound": -1.0,
-              "Y-axis/Unit": "ul"
+              "Y-axis/Unit": "ul",
+              "Visible data/SmartDashboard/Pitch": true
             }
           },
           "3,3": {
@@ -145,7 +146,8 @@
               "Y-axis/Automatic bounds": true,
               "Y-axis/Upper bound": 1.0,
               "Y-axis/Lower bound": -1.0,
-              "Y-axis/Unit": "ul"
+              "Y-axis/Unit": "ul",
+              "Visible data/SmartDashboard/Pitch Velocity": true
             }
           },
           "6,3": {

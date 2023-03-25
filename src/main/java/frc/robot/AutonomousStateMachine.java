@@ -39,7 +39,8 @@ public class AutonomousStateMachine {
         DRIVE_TO_WALL,
         SCORE_CONE,
         RAISE_ARM,
-        LOWER_ARM
+        LOWER_ARM,
+        BACK_UP
     }
 
     // The minimum angle at which the robot stops driving forward at
@@ -79,7 +80,8 @@ public class AutonomousStateMachine {
             case RAISE_ARM: {this.raiseArm(); break;}
             case DRIVE_TO_WALL: {this.driveToWall(); break;}
             case SCORE_CONE: {this.scoreCone(); break;}
-            case LOWER_ARM: {break;}
+            case LOWER_ARM: {this.lowerArm(); break;}
+            case BACK_UP: {this.backUp(); break;}
         }
     }
 
@@ -97,8 +99,8 @@ public class AutonomousStateMachine {
         SmartDashboard.putNumber("Pitch Velocity", pitchVel);
 
         // Drive forward and steer
-        robot.DRIVE_LEFT.setReference(600 + (yawP * yaw), ControlType.kVelocity);
-        robot.DRIVE_RIGHT.setReference(-600 + (yawP * yaw), ControlType.kVelocity);
+        robot.DRIVE_LEFT.setReference(800 + (yawP * yaw), ControlType.kVelocity);
+        robot.DRIVE_RIGHT.setReference(-800 + (yawP * yaw), ControlType.kVelocity);
 
         if (Math.abs(pitch) > START_BALANCING_AT_ANGLE) {
             currentState = State.BALANCE;
@@ -106,14 +108,14 @@ public class AutonomousStateMachine {
     }
 
     public void driveToLine() {
-        final double LINE_ENCODER_COUNT = 30;
+        final double LINE_ENCODER_COUNT = 60;
 
         //SmartDashboard.putNumber("STATE MACHINE RANDOM", new Random().nextDouble());
         //double yaw = robot.gyro.getAngle();
 
         // Drive forward and steer
-        robot.DRIVE_LEFT.setReference(-0.15, ControlType.kDutyCycle);
-        robot.DRIVE_RIGHT.setReference(0.15, ControlType.kDutyCycle);
+        robot.DRIVE_LEFT.setReference(-0.35, ControlType.kDutyCycle);
+        robot.DRIVE_RIGHT.setReference(0.35, ControlType.kDutyCycle);
 
         SmartDashboard.putNumber("drivetrain encoder distance", robot.DRIVE_LEFT_FRONT.getEncoder().getPosition());
         
@@ -128,7 +130,10 @@ public class AutonomousStateMachine {
         //double roll = robot.gyro.getXComplementaryAngle();
         double yaw = robot.gyro.getAngle();
         double pitch = -robot.gyro.getYComplementaryAngle();
-        double pitchVel = -robot.gyro.getRate();
+        pitchVelocityAverager.addValue((pitch - previousPitch) / (System.currentTimeMillis() - previousTime) * 1000);
+        double pitchVel = pitchVelocityAverager.getValue();
+        previousTime = System.currentTimeMillis();
+        previousPitch = pitch;
 
         SmartDashboard.putNumber("Pitch", pitch);
         SmartDashboard.putNumber("Pitch Velocity", pitchVel);
@@ -166,33 +171,74 @@ public class AutonomousStateMachine {
         robot.armPIDController.setReference(70, CANSparkMax.ControlType.kSmartMotion);
 
         if (Math.abs(robot.arm.getEncoder().getPosition() - 70) < 10) {
+            robot.DRIVE_LEFT_FRONT.getEncoder().setPosition(0);
+            robot.DRIVE_RIGHT_FRONT.getEncoder().setPosition(0);
+            previousTime = System.currentTimeMillis();
             currentState = State.DRIVE_TO_WALL;
         }
     }
 
-    public void driveToWall() {
+    public void lowerArm() {
+        robot.armPIDController.setReference(55, CANSparkMax.ControlType.kSmartMotion);
+
+        if (Math.abs(robot.arm.getEncoder().getPosition() - 55) < 5) {
+            robot.DRIVE_LEFT_FRONT.getEncoder().setPosition(0);
+            robot.DRIVE_RIGHT_FRONT.getEncoder().setPosition(0);
+            previousTime = System.currentTimeMillis();
+
+            currentState = State.SCORE_CONE;
+        }
+    }
+
+    public void backUp() {
         final double LINE_ENCODER_COUNT = 5;
 
         //SmartDashboard.putNumber("STATE MACHINE RANDOM", new Random().nextDouble());
         //double yaw = robot.gyro.getAngle();
 
-        // Drive forward and steer
-        robot.DRIVE_LEFT.setReference(0.15, ControlType.kDutyCycle);
-        robot.DRIVE_RIGHT.setReference(-0.15, ControlType.kDutyCycle);
+        // Drive backward and steer
+        robot.DRIVE_LEFT.setReference(-0.15, ControlType.kDutyCycle);
+        robot.DRIVE_RIGHT.setReference(0.15, ControlType.kDutyCycle);
 
         SmartDashboard.putNumber("drivetrain encoder distance", robot.DRIVE_LEFT_FRONT.getEncoder().getPosition());
         
-        if (robot.DRIVE_LEFT_FRONT.getEncoder().getPosition() >= LINE_ENCODER_COUNT) {
+        if (robot.DRIVE_LEFT_FRONT.getEncoder().getPosition() <= LINE_ENCODER_COUNT) {
             robot.DRIVE_LEFT.setReference(0, ControlType.kDutyCycle);
             robot.DRIVE_RIGHT.setReference(0, ControlType.kDutyCycle);
-            currentState = State.SCORE_CONE;
+            currentState = State.RAISE_ARM;
+        }
+    }
+
+    public void driveToWall() {
+        final double LINE_ENCODER_COUNT = 29;
+
+        SmartDashboard.putNumber("Drive Train Pos", robot.DRIVE_LEFT_FRONT.getEncoder().getPosition());
+        double yaw = robot.gyro.getAngle();
+
+        // Drive forward and steer
+        robot.DRIVE_LEFT.setReference(0.1, ControlType.kDutyCycle);
+        robot.DRIVE_RIGHT.setReference(-0.1, ControlType.kDutyCycle);
+
+        //SmartDashboard.putNumber("drivetrain encoder distance", robot.DRIVE_LEFT_FRONT.getEncoder().getPosition());
+        
+        if (robot.DRIVE_LEFT_FRONT.getEncoder().getPosition() >= LINE_ENCODER_COUNT || Math.abs(previousTime - System.currentTimeMillis()) > 5000) {
+            robot.DRIVE_LEFT.setReference(0, ControlType.kDutyCycle);
+            robot.DRIVE_RIGHT.setReference(0, ControlType.kDutyCycle);
+            previousTime = 0;
+            Pneumatic.gripSolenoid.set(true);
+            currentState = State.LOWER_ARM;
         }
     }
 
     public void scoreCone() {
-        Pneumatic.gripSolenoid.toggle();
-        Pneumatic.pushSolenoid.toggle();
+        Pneumatic.gripSolenoid.set(false);
 
-        currentState = State.DRIVE_TO_LINE;
+        robot.DRIVE_LEFT.setReference(-0.05, ControlType.kDutyCycle);
+        robot.DRIVE_RIGHT.setReference(0.05, ControlType.kDutyCycle);
+
+        if (Math.abs(System.currentTimeMillis() - previousTime) == 2000) {
+            Pneumatic.pushSolenoid.set(true);
+            currentState = State.DRIVE_TO_LINE;
+        }
     }
 }
