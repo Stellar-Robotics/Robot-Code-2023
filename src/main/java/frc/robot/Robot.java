@@ -105,7 +105,8 @@ public class Robot extends TimedRobot {
     DRIVE_AND_BALANCE,
     DO_NOTHING,
     DRIVE_TO_LINE,
-    SCORE_CONE
+    SCORE_CONE,
+    SCORE_CONE_GRAB_ELEM
   }
 
   // CAMERA STUFF
@@ -142,7 +143,7 @@ public class Robot extends TimedRobot {
 
     // Set up smart motion constraints for arm
     armPIDController.setSmartMotionMaxVelocity(5820, 0);
-    armPIDController.setSmartMotionMaxAccel(2500, 0); 
+    armPIDController.setSmartMotionMaxAccel(4000, 0); 
     armPIDController.setSmartMotionAllowedClosedLoopError(2, 0);
     
   }
@@ -226,7 +227,10 @@ public class Robot extends TimedRobot {
         case DO_NOTHING: {auto = new AutonomousStateMachine(this, State.DO_NOTHING); break;}
         case DRIVE_AND_BALANCE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_PLATFORM); break;}
         case DRIVE_TO_LINE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_LINE); break;}
-        case SCORE_CONE: {auto = new AutonomousStateMachine(this, State.RAISE_ARM); break;}    
+        case SCORE_CONE: {auto = new AutonomousStateMachine(this, State.RAISE_ARM); break;}
+        case SCORE_CONE_GRAB_ELEM: {auto = new AutonomousStateMachine(this, State.RAISE_ARM); 
+          auto.getElement = true;
+          break;}    
       }
 
     double P = SmartDashboard.getNumber("P", 0);
@@ -300,23 +304,49 @@ public class Robot extends TimedRobot {
     }
 
     if (OPERATOR.getRawButton(7)) {
-      ROLLER.set(1);
+
+      ROLLER.set(0.5);
+
+      Pneumatic.pushSolenoid.set(true);
+
+    }
+
+    else if (OPERATOR.getRawButton(8)) {
+
+      ROLLER.set(-0.5);
+
+      Pneumatic.pushSolenoid.set(true);
+
+    }
+
+    else {
+
+      ROLLER.set(0);
+
     }
 
     // Pneumatic Actuation Code
     
-    if (OPERATOR.getRawButtonPressed(3)) {
-
-      Pneumatic.gripSolenoid.toggle();
-
-    }
-
-    if (OPERATOR.getRawButtonPressed(4)){
+    if (OPERATOR.getRawButtonPressed(4)) {
 
       Pneumatic.pushSolenoid.toggle();
 
     }
 
+    
+    if (armEncoder.getPosition() < 45) {
+
+      Pneumatic.gripSolenoid.set(false);
+
+    }
+
+    else if (OPERATOR.getRawButtonPressed(3)) {
+
+      Pneumatic.gripSolenoid.toggle();
+
+    }
+
+    OPERATOR.getRawButtonPressed(3);
 
     //Operator LED contorl for Human Player comunication
 
@@ -345,11 +375,11 @@ public class Robot extends TimedRobot {
     // Arm Positioning and PID
     if ( OPERATOR.getY() < -0.25 && targetPosition <= 90 && OPERATOR.getRawButton(1)) {
 
-      targetPosition += 0.5;
+      targetPosition += 1;
 
     } else if ( OPERATOR.getY() > 0.25 && targetPosition >= 0 && OPERATOR.getRawButton(1)) {
 
-      targetPosition -= 0.5;
+      targetPosition -= 2.5;
 
     }
 
