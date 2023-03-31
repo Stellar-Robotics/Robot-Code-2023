@@ -137,7 +137,7 @@ public class AutonomousStateMachine {
 
     public void balance2() {
         //double roll = robot.gyro.getXComplementaryAngle();
-        double yaw = robot.gyro.getAngle();
+        //double yaw = robot.gyro.getAngle();
         double pitch = -robot.gyro.getYComplementaryAngle();
         pitchVelocityAverager.addValue((pitch - previousPitch) / (System.currentTimeMillis() - previousTime) * 1000);
         double pitchVel = pitchVelocityAverager.getValue();
@@ -163,8 +163,8 @@ public class AutonomousStateMachine {
         }
 
         // Calculate PID gains for yaw control and add to pitch power
-        double driveLeftPower =  -pitchForce + (yawP * yaw);
-        double driveRightPower = pitchForce + (yawP * yaw);
+        double driveLeftPower =  -pitchForce //+ (yawP * yaw);
+        double driveRightPower = pitchForce //+ (yawP * yaw);
         
         SmartDashboard.putNumber("power", pitchForce);
         
