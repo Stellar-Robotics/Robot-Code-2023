@@ -5,38 +5,24 @@
 // Import necessary libraries
 
 package frc.robot;
-import java.lang.management.OperatingSystemMXBean;
-import java.util.Random;
-
-import org.opencv.core.Mat;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.AutonomousStateMachine.State;
 import edu.wpi.first.cameraserver.CameraServer;
-import edu.wpi.first.cscore.CvSink;
-import edu.wpi.first.cscore.CvSource;
 import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PowerDistribution;
-import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.event.BooleanEvent;
-import edu.wpi.first.wpilibj.event.EventLoop;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 import com.revrobotics.SparkMaxPIDController;
 import com.revrobotics.CANSparkMax.ControlType;
-
-import java.time.Clock;
-import java.lang.System;
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -69,8 +55,6 @@ public class Robot extends TimedRobot {
   public final Joystick DRIVER_RIGHT_JOYSTICK = new Joystick(1);
   public final Joystick OPERATOR = new Joystick(2);
   public final GenericHID BUTTON_PANEL = new GenericHID(3);
-  //public final Joystick guitar = new Joystick(3);
-  //public final XboxController xOperator = new XboxController(4);
 
   // Declare motors & actuators.
   public final CANSparkMax DRIVE_LEFT_FRONT;
@@ -81,9 +65,6 @@ public class Robot extends TimedRobot {
 
   public final SparkMaxPIDController DRIVE_LEFT;
   public final SparkMaxPIDController DRIVE_RIGHT;
-
-
-  //public DifferentialDrive drivetrain;
 
   // Setting variables for logic.
 
@@ -125,11 +106,11 @@ public class Robot extends TimedRobot {
     DRIVE_AND_BALANCE,
     DO_NOTHING,
     DRIVE_TO_LINE,
-    SCORE_CONE
+    SCORE_CONE,
+    SCORE_CONE_GRAB_ELEM
   }
 
   // CAMERA STUFF
-  //Mat mat = new Mat();
   UsbCamera camera;
 
   public Robot() {
@@ -152,13 +133,8 @@ public class Robot extends TimedRobot {
     DRIVE_LEFT_REAR.follow(DRIVE_LEFT_FRONT);
     DRIVE_RIGHT_REAR.follow(DRIVE_RIGHT_FRONT);
 
-    //DRIVE_LEFT = new MotorControllerGroup(DRIVE_LEFT_FRONT, DRIVE_LEFT_REAR);
-    //DRIVE_RIGHT = new MotorControllerGroup(DRIVE_RIGHT_FRONT, DRIVE_RIGHT_REAR);
     DRIVE_LEFT = DRIVE_LEFT_FRONT.getPIDController();
     DRIVE_RIGHT = DRIVE_RIGHT_FRONT.getPIDController();
-
-    //drivetrain = new DifferentialDrive(DRIVE_LEFT_FRONT, DRIVE_RIGHT_FRONT);
-    //drivetrain.
 
     // Set up smart motion constraints for drivetrain
     //DRIVE_LEFT.setSmartMotionMaxAccel(kDefaultPeriod, selectedAutoMode)
@@ -168,7 +144,7 @@ public class Robot extends TimedRobot {
 
     // Set up smart motion constraints for arm
     armPIDController.setSmartMotionMaxVelocity(5820, 0);
-    armPIDController.setSmartMotionMaxAccel(2500, 0); 
+    armPIDController.setSmartMotionMaxAccel(4000, 0); 
     armPIDController.setSmartMotionAllowedClosedLoopError(2, 0);
     
   }
@@ -200,7 +176,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("ArmD", 0.0001); 
     SmartDashboard.putNumber("ArmPos", 0);
 
-    SmartDashboard.putNumber("PitchP", 10);
+    SmartDashboard.putNumber("PitchP", 20);
     SmartDashboard.putNumber("PitchI", 0);
     SmartDashboard.putNumber("PitchD", 12);
 
@@ -212,7 +188,8 @@ public class Robot extends TimedRobot {
     // Setting hardware device values
 
     Pneumatic.compressor.disable();
-    //lightController.set(0.69);
+
+    CameraServer.startAutomaticCapture();
 
 
     Pneumatic.phub.clearStickyFaults();
@@ -229,8 +206,7 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() { //lightController.set(-0.07); 
-  }
+  public void robotPeriodic() {}
 
   /**
    * This autonomous (along with the chooser code above) shows how to select between different
@@ -252,7 +228,11 @@ public class Robot extends TimedRobot {
         case DO_NOTHING: {auto = new AutonomousStateMachine(this, State.DO_NOTHING); break;}
         case DRIVE_AND_BALANCE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_PLATFORM); break;}
         case DRIVE_TO_LINE: {auto = new AutonomousStateMachine(this, State.DRIVE_TO_LINE); break;}
-        case SCORE_CONE: {auto = new AutonomousStateMachine(this, State.SCORE_CONE); break;}    }
+        case SCORE_CONE: {auto = new AutonomousStateMachine(this, State.RAISE_ARM); break;}
+        case SCORE_CONE_GRAB_ELEM: {auto = new AutonomousStateMachine(this, State.RAISE_ARM); 
+          auto.getElement = true;
+          break;}    
+      }
 
     double P = SmartDashboard.getNumber("P", 0);
     if (P != DRIVE_LEFT.getP()) {
@@ -273,10 +253,6 @@ public class Robot extends TimedRobot {
       DRIVE_LEFT.setD(D);
       DRIVE_RIGHT.setD(D);
     }
-    
-
-    //DRIVE_LEFT.setP(0.05);
-    //DRIVE_RIGHT.setP(0.05);
   }
 
   /** This function is called periodically during autonomous. */
@@ -289,7 +265,6 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() { 
     Pneumatic.compressor.enableDigital(); 
-    camera = CameraServer.startAutomaticCapture();
   }
 
   /** This function is called periodically during operator control. */
@@ -297,19 +272,6 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
 
     // Calls the state machine in the DriveTrain class
-
-    // Creates UsbCamera and MjpegServer [1] and connects them
-    
-
-    // Creates the CvSink and connects it to the UsbCamera
-    //CvSink cvSink = CameraServer.getVideo();
-    //cvSink.grabFrame(mat);
-
-    // Creates the CvSource and MjpegServer [2] and connects them
-    //CvSource outputStream = CameraServer.putVideo("Blur", 640, 480);
-    //outputStream.putFrame(mat);
-
-
     
     if ( (DRIVER_LEFT_JOYSTICK.getRawButton(12) == true) & (!toggleLast) ) {
 
@@ -327,6 +289,7 @@ public class Robot extends TimedRobot {
     if (DRIVER_RIGHT_JOYSTICK.getRawButton(1)) {
       double driveLeftPower = DRIVER_RIGHT_JOYSTICK.getZ() * driveSpeedMultiplier * 0.6;
       double driveRightPower = DRIVER_RIGHT_JOYSTICK.getZ() * driveSpeedMultiplier * 0.6;
+
       // Apply motor power
       DRIVE_LEFT.setReference(driveLeftPower, ControlType.kDutyCycle);
       DRIVE_RIGHT.setReference(driveRightPower, ControlType.kDutyCycle);
@@ -335,7 +298,7 @@ public class Robot extends TimedRobot {
       // Calculate power based on power and multiplier
       double driveLeftPower = -DRIVER_LEFT_JOYSTICK.getY() * driveSpeedMultiplier;
       double driveRightPower = (DRIVER_RIGHT_JOYSTICK.getY() * SERENOCITY) * driveSpeedMultiplier;
-      //driveRightPower += 0.05;
+
       // Apply motor power
 
       if (flipDrivetrain) {
@@ -353,23 +316,49 @@ public class Robot extends TimedRobot {
     }
 
     if (OPERATOR.getRawButton(7)) {
-      ROLLER.set(1);
+
+      ROLLER.set(0.5);
+
+      Pneumatic.pushSolenoid.set(true);
+
+    }
+
+    else if (OPERATOR.getRawButton(8)) {
+
+      ROLLER.set(-0.5);
+
+      Pneumatic.pushSolenoid.set(true);
+
+    }
+
+    else {
+
+      ROLLER.set(0);
+
     }
 
     // Pneumatic Actuation Code
     
-    if (OPERATOR.getRawButtonPressed(3)) {
-
-      Pneumatic.gripSolenoid.toggle();
-
-    }
-
-    if (OPERATOR.getRawButtonPressed(4)){
+    if (OPERATOR.getRawButtonPressed(4)) {
 
       Pneumatic.pushSolenoid.toggle();
 
     }
 
+    
+    if (armEncoder.getPosition() < 45) {
+
+      Pneumatic.gripSolenoid.set(false);
+
+    }
+
+    else if (OPERATOR.getRawButtonPressed(3)) {
+
+      Pneumatic.gripSolenoid.toggle();
+
+    }
+
+    OPERATOR.getRawButtonPressed(3);
 
     //Operator LED contorl for Human Player comunication
 
@@ -398,13 +387,11 @@ public class Robot extends TimedRobot {
     // Arm Positioning and PID
     if ( OPERATOR.getY() < -0.25 && targetPosition <= 90 && OPERATOR.getRawButton(1)) {
 
-      targetPosition += 0.5;
-      //Pneumatic.rightlatchSolenoid.set(true);
-      //Pneumatic.leftlatchSolenoid.set(true);
+      targetPosition += 1;
 
     } else if ( OPERATOR.getY() > 0.25 && targetPosition >= 0 && OPERATOR.getRawButton(1)) {
 
-      targetPosition -= 0.5;
+      targetPosition -= 2.5;
 
     }
 
@@ -421,8 +408,6 @@ public class Robot extends TimedRobot {
     
     SmartDashboard.putNumber("armPosition", targetPosition);
     armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kSmartMotion);
-
-    //armPIDController.setReference(targetPosition, CANSparkMax.ControlType.kPosition);
 
     // Get PID values.
     double newArmP = SmartDashboard.getNumber("ArmP", 0.1);
@@ -442,9 +427,7 @@ public class Robot extends TimedRobot {
     }
 
     // Update SmartDashboard
-    //SmartDashboard.putNumber("TestButtonSpike", guitar.getRawButton(5)? 1 : 0);
     SmartDashboard.putNumber("Encoder", armEncoder.getPosition());
-    //SmartDashboard.putNumber("GuitarHat", guitar.getPOV());
     SmartDashboard.putNumber("OperatorY", OPERATOR.getY());
     SmartDashboard.putBoolean("DriveSpeed", (toggleState || armEncoder.getPosition() > 5));
     
