@@ -145,7 +145,7 @@ public class AutonomousStateMachine {
 
         double pitchForce = 0;
 
-        if (Math.abs(pitchVel) < SmartDashboard.getNumber("PitchVelThresh", 4.5)) {
+        if (Math.abs(pitchVel) < 6) {
             pitchForce = pitch * pitchP;
         } else {
             pitchForce = pitchVel * pitchD;

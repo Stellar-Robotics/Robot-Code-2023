@@ -100,6 +100,7 @@ public class Robot extends TimedRobot {
 
   boolean toggleState = false;
   boolean toggleLast = false;
+  boolean flipDrivetrain = false;
   
   boolean toggleLastArm = false;
 
@@ -336,8 +337,19 @@ public class Robot extends TimedRobot {
       double driveRightPower = (DRIVER_RIGHT_JOYSTICK.getY() * SERENOCITY) * driveSpeedMultiplier;
       //driveRightPower += 0.05;
       // Apply motor power
-      DRIVE_LEFT.setReference(driveLeftPower, ControlType.kDutyCycle);
-      DRIVE_RIGHT.setReference(driveRightPower, ControlType.kDutyCycle);
+
+      if (flipDrivetrain) {
+        DRIVE_LEFT.setReference(driveRightPower, ControlType.kDutyCycle);
+        DRIVE_RIGHT.setReference(driveLeftPower, ControlType.kDutyCycle);
+      } else {
+        DRIVE_LEFT.setReference(driveLeftPower, ControlType.kDutyCycle);
+        DRIVE_RIGHT.setReference(driveRightPower, ControlType.kDutyCycle);
+      }
+
+    }
+
+    if (DRIVER_LEFT_JOYSTICK.getRawButtonPressed(11)) {
+      flipDrivetrain = !flipDrivetrain;
     }
 
     if (OPERATOR.getRawButton(7)) {
